@@ -2,18 +2,17 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import multer from 'multer';
 import { config } from '../lib/config.js';
-import { route, sendJson, requireBearer, HttpError } from '../lib/http.js';
+import { route, sendJson, HttpError } from '../lib/http.js';
 import { extractText, SUPPORTED_EXTENSIONS } from '../lib/extract.js';
 import { ingestDocuments } from '../lib/ingest.js';
 
 const MAX_FILES = 10;
 
 /**
- * Both methods require the header  Authorization: Bearer <INGEST_SECRET>,
- * checked before any of the request body is read.
+ * No authentication: anyone who can reach this endpoint can add documents.
  *
  * GET /api/upload
- *   Verifies the key (used by /admin at sign-in).
+ *   Upload limits, used by /admin.
  *   Response: { ok: true, maxUploadMb, extensions }
  *
  * POST /api/upload
@@ -26,7 +25,6 @@ const MAX_FILES = 10;
  *   Response: { upserted, files: [{ file, id, chunks, characters } | { file, error }] }
  */
 export default route(['GET', 'POST'], async (req, res) => {
-  requireBearer(req, config.ingestSecret);
   if (req.method === 'GET') {
     return sendJson(res, 200, { ok: true, maxUploadMb: config.maxUploadMb, extensions: SUPPORTED_EXTENSIONS });
   }
@@ -61,7 +59,7 @@ export default route(['GET', 'POST'], async (req, res) => {
       results.push({ file: file.originalname, id: documents[0].id, chunks: count, characters: text.length });
     } catch (err) {
       if (!(err instanceof HttpError)) console.error(`Upload failed for ${file.originalname}:`, err);
-      results.push({ file: file.originalname, error: err instanceof HttpError ? err.message : 'Could not process this file' });
+      results.push({ file: file.originalname, error: uploadErrorMessage(err) });
     }
   }
 
@@ -72,6 +70,16 @@ export default route(['GET', 'POST'], async (req, res) => {
     files: results,
   });
 });
+
+function uploadErrorMessage(err) {
+  if (err instanceof HttpError) return err.message;
+  if (/^Pinecone/.test(err?.name ?? '')) {
+    return err.name === 'PineconeConnectionError'
+      ? 'Could not reach Pinecone (network timeout). Please try again.'
+      : `Pinecone rejected the data: ${err.message}`;
+  }
+  return 'Could not process this file';
+}
 
 // Stable id per filename, so re-uploading a file replaces its chunks. Pinecone
 // ids must be ASCII, so non-Latin names (e.g. Burmese) are kept unique by a hash.

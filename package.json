@@ -5,7 +5,7 @@
   "description": "RAG backend on Vercel: Pinecone for retrieval, OpenRouter for generation",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "node --watch scripts/dev-server.js",
@@ -15,11 +15,12 @@
     "check": "node scripts/smoke-test.js"
   },
   "dependencies": {
+    "@napi-rs/canvas": "0.1.80",
     "@pinecone-database/pinecone": "9.0.0",
     "mammoth": "^1.13.0",
     "multer": "^2.4.0",
     "pdf-parse": "^2.4.5",
-    "tesseract.js": "^7.0.0",
+    "pdfjs-dist": "5.4.296",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {

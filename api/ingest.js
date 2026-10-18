@@ -1,5 +1,4 @@
-import { config } from '../lib/config.js';
-import { route, readJson, sendJson, requireBearer, HttpError } from '../lib/http.js';
+import { route, readJson, sendJson, HttpError } from '../lib/http.js';
 import { ingestDocuments } from '../lib/ingest.js';
 
 // Keep each request small enough to finish well inside the function timeout.
@@ -8,7 +7,7 @@ const MAX_DOCUMENTS = 50;
 const MAX_TOTAL_CHARS = 1_000_000;
 
 /**
- * POST /api/ingest   (requires header  Authorization: Bearer <INGEST_SECRET>)
+ * POST /api/ingest   (no authentication)
  * Body, either a single document:
  *   { text: string, id?: string, source?: string, metadata?: object, namespace?: string }
  * or many:
@@ -16,7 +15,6 @@ const MAX_TOTAL_CHARS = 1_000_000;
  * Response: { upserted, documents: [{ id, source, chunks }] }
  */
 export default route(['POST'], async (req, res) => {
-  requireBearer(req, config.ingestSecret);
   const body = await readJson(req);
 
   const documents = Array.isArray(body.documents) ? body.documents : body.text ? [body] : [];

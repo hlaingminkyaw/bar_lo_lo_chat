@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <!-- interactive-widget: on Android, the on-screen keyboard resizes the page instead of covering it. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
+  <meta name="theme-color" content="#161a21" />
   <title>BarLoLo Chat</title>
   <link rel="icon" type="image/jpeg" href="/logo-avatar.jpg" />
   <link rel="apple-touch-icon" href="/logo-avatar.jpg" />
@@ -11,6 +13,7 @@
       color-scheme: dark;
       --bg: #0f1115;
       --panel: #161a21;
+      --panel-hover: #1c212a;
       --bubble-bot: #1d222b;
       --bubble-user: #3b6ef5;
       --fg: #e7e9ee;
@@ -19,63 +22,100 @@
       --accent: #3b6ef5;
       --accent-hover: #5482ff;
       --danger: #f87171;
+
+      /* Layout: desktop (> 1024px) */
+      --content: 840px;
+      --bubble-max: 72%;
+      --gutter: 20px;
+      --tap: 40px;
     }
+    /* Tablet: 641px – 1024px */
+    @media (max-width: 1024px) {
+      :root { --content: 720px; --bubble-max: 75%; --gutter: 16px; }
+    }
+    /* Mobile: ≤ 640px */
+    @media (max-width: 640px) {
+      :root { --content: 100%; --bubble-max: 88%; --gutter: 12px; --tap: 44px; }
+    }
+
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    html { height: 100%; -webkit-text-size-adjust: 100%; }
     body {
       margin: 0;
+      height: 100vh;
+      height: 100dvh; /* script narrows this to the visible area while the keyboard is open */
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
       background: var(--bg);
       color: var(--fg);
       font: 15px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans Myanmar", "Myanmar Text", Padauk, sans-serif;
-      display: flex;
-      flex-direction: column;
+      -webkit-tap-highlight-color: transparent;
     }
+    button { font: inherit; color: inherit; touch-action: manipulation; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+    /* ---------- Header ---------- */
     header {
       flex: none;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px max(var(--gutter), env(safe-area-inset-right)) 12px max(var(--gutter), env(safe-area-inset-left));
+      padding-top: max(12px, env(safe-area-inset-top));
+    }
+    .header-inner {
+      max-width: var(--content);
+      margin: 0 auto;
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--panel);
     }
     .avatar {
-      width: 32px; height: 32px; flex: none;
+      width: 34px; height: 34px; flex: none;
       border-radius: 50%;
       object-fit: cover;
       background: #000;
       box-shadow: 0 0 0 1px rgba(236, 72, 153, .55), 0 0 10px rgba(168, 85, 247, .35);
     }
-    header h1 { margin: 0; font-size: 1rem; font-weight: 600; }
-    header p { margin: 0; font-size: .8rem; color: var(--muted); }
+    .brand { min-width: 0; }
+    header h1 { margin: 0; font-size: 1.05rem; font-weight: 600; line-height: 1.3; white-space: nowrap; }
+    header p { margin: 0; font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     #clear {
       margin-left: auto;
-      background: none; border: 1px solid var(--border); color: var(--muted);
-      border-radius: 8px; padding: 6px 10px; font: inherit; font-size: .8rem; cursor: pointer;
+      flex: none;
+      min-height: var(--tap);
+      padding: 0 14px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: .85rem;
+      cursor: pointer;
+      transition: color .15s, border-color .15s, background .15s;
     }
-    #clear:hover { color: var(--fg); border-color: var(--muted); }
 
+    /* ---------- Messages ---------- */
     #log {
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
       overscroll-behavior: contain;
       scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
     }
     .thread {
-      max-width: 760px;
+      max-width: var(--content);
       margin: 0 auto;
-      padding: 24px 16px;
+      padding: 24px max(var(--gutter), env(safe-area-inset-right)) 24px max(var(--gutter), env(safe-area-inset-left));
       display: flex;
       flex-direction: column;
       gap: 14px;
     }
-
     .row { display: flex; gap: 10px; align-items: flex-end; }
     .row.user { justify-content: flex-end; }
-    .row .avatar { width: 28px; height: 28px; font-size: 12px; }
+    .row .avatar { width: 28px; height: 28px; }
     .bubble {
-      max-width: min(80%, 620px);
+      max-width: var(--bubble-max);
       padding: 10px 14px;
       border-radius: 18px;
       overflow-wrap: anywhere;
@@ -87,12 +127,11 @@
       border-bottom-right-radius: 6px;
       white-space: pre-wrap;
     }
-    .row.bot .bubble, .row.error .bubble {
+    .row.bot .bubble {
       background: var(--bubble-bot);
       border: 1px solid var(--border);
       border-bottom-left-radius: 6px;
     }
-    .row.error .bubble { border-color: var(--danger); color: var(--danger); }
     .bubble p { margin: 0 0 .6em; }
     .bubble p:last-child, .bubble ul:last-child, .bubble ol:last-child { margin-bottom: 0; }
     .bubble ul, .bubble ol { margin: 0 0 .6em; padding-left: 1.3em; }
@@ -107,11 +146,12 @@
     .typing span:nth-child(3) { animation-delay: .3s; }
     @keyframes blink { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
 
+    /* ---------- Welcome screen ---------- */
     .empty {
-      margin: 12vh auto 0;
+      margin: 10vh auto 0;
       text-align: center;
       color: var(--muted);
-      max-width: 460px;
+      max-width: 480px;
     }
     .empty .hero {
       display: block;
@@ -121,34 +161,38 @@
       object-fit: cover;
       box-shadow: 0 0 0 1px rgba(236, 72, 153, .35), 0 8px 40px rgba(168, 85, 247, .3);
     }
-    .empty h2 { color: var(--fg); font-size: 1.2rem; margin: 0 0 6px; font-weight: 600; }
+    .empty h2 { color: var(--fg); font-size: 1.25rem; margin: 0 0 6px; font-weight: 600; }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; }
     .chips button {
-      background: var(--panel); border: 1px solid var(--border); color: var(--fg);
-      border-radius: 999px; padding: 7px 14px; font: inherit; font-size: .85rem; cursor: pointer;
+      min-height: var(--tap);
+      padding: 6px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      font-size: .875rem;
+      cursor: pointer;
+      transition: border-color .15s, background .15s, transform .15s;
     }
-    .chips button:hover { border-color: var(--accent); }
 
+    /* ---------- Input bar ---------- */
     footer {
       flex: none;
-      position: sticky;
-      bottom: 0;
-      background: linear-gradient(to top, var(--bg) 70%, transparent);
-      padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+      background: linear-gradient(to top, var(--bg) 75%, transparent);
+      padding: 8px max(var(--gutter), env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
     }
     form {
-      max-width: 760px;
+      max-width: var(--content);
       margin: 0 auto;
       display: flex;
       align-items: flex-end;
       gap: 8px;
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 8px 8px 8px 14px;
-      transition: border-color .15s;
+      border-radius: 18px;
+      padding: 6px 6px 6px 14px;
+      transition: border-color .15s, box-shadow .15s;
     }
-    form:focus-within { border-color: var(--accent); }
+    form:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59, 110, 245, .15); }
     textarea {
       flex: 1; min-width: 0;
       resize: none;
@@ -157,42 +201,77 @@
       color: var(--fg);
       font: inherit;
       line-height: 1.6;
-      padding: 6px 0;
+      padding: 8px 0;
       max-height: 180px;
     }
     textarea::placeholder { color: var(--muted); }
+    textarea:focus-visible { outline: none; } /* the form's own focus ring shows focus */
     #send {
       flex: none;
-      height: 38px;
+      min-height: var(--tap);
+      min-width: 64px;
       padding: 0 16px;
       border: 0;
-      border-radius: 10px;
+      border-radius: 12px;
       background: var(--accent);
       color: #fff;
-      font: inherit;
       font-weight: 600;
       cursor: pointer;
-      transition: background .15s;
+      transition: background .15s, transform .1s;
     }
-    #send:hover:not(:disabled) { background: var(--accent-hover); }
+    #send:active:not(:disabled) { transform: scale(.97); }
     #send:disabled { opacity: .45; cursor: not-allowed; }
-    .note { max-width: 760px; margin: 6px auto 0; text-align: center; font-size: .72rem; color: var(--muted); }
+    .note { max-width: var(--content); margin: 6px auto 0; text-align: center; font-size: .72rem; color: var(--muted); }
 
-    @media (max-width: 600px) {
-      .bubble { max-width: 88%; }
-      .row.bot .avatar, .row.error .avatar { display: none; }
+    /* ---------- Hover effects: only for real pointers, so they don't stick after a tap ---------- */
+    @media (hover: hover) and (pointer: fine) {
+      #clear:hover { color: var(--fg); border-color: var(--muted); background: var(--panel-hover); }
+      .chips button:hover { border-color: var(--accent); background: var(--panel-hover); transform: translateY(-1px); }
+      #send:hover:not(:disabled) { background: var(--accent-hover); }
+      form:hover:not(:focus-within) { border-color: #333a46; }
+    }
+
+    /* ---------- Mobile ---------- */
+    @media (max-width: 640px) {
+      header { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: 8px; }
+      .avatar { width: 30px; height: 30px; }
+      header h1 { font-size: .98rem; }
       header p { display: none; }
+      #clear { padding: 0 12px; }
+
+      .thread { padding-top: 16px; padding-bottom: 16px; gap: 12px; }
+      .row.bot .avatar { display: none; }
+      .bubble { padding: 9px 13px; }
+
+      .empty { margin-top: 5vh; }
+      .empty .hero { width: 128px; height: 128px; border-radius: 20px; }
+      .empty h2 { font-size: 1.1rem; }
+
+      footer { padding-top: 6px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+      form { border-radius: 16px; padding-left: 12px; }
+      textarea { font-size: 16px; max-height: 140px; } /* 16px stops iOS from zooming in on focus */
+    }
+    /* Phones in landscape: not much height, so drop the large artwork. */
+    @media (max-height: 500px) {
+      .empty { margin-top: 12px; }
+      .empty .hero { display: none; }
+    }
+    /* Touch devices: Enter adds a new line, so the keyboard hint doesn't apply. */
+    @media (pointer: coarse) {
+      .note { display: none; }
     }
   </style>
 </head>
 <body>
   <header>
-    <img class="avatar" src="/logo-avatar.jpg" alt="" />
-    <div>
-      <h1>BarLoLo Chat</h1>
-      <p>Ask anything about our services</p>
+    <div class="header-inner">
+      <img class="avatar" src="/logo-avatar.jpg" alt="" />
+      <div class="brand">
+        <h1>BarLoLo Chat</h1>
+        <p>Ask anything about our services</p>
+      </div>
+      <button id="clear" type="button" title="Start a new conversation">New chat</button>
     </div>
-    <button id="clear" type="button" title="Start a new conversation">New chat</button>
   </header>
 
   <main id="log">
@@ -217,6 +296,24 @@
     const MAX_HISTORY = 12;
     let history = [];
     let busy = false;
+
+    // On touch screens, Enter inserts a new line (Send button sends) and we don't
+    // auto-focus the input, which would pop the keyboard up unasked.
+    const isTouch = matchMedia('(pointer: coarse)').matches;
+    input.setAttribute('enterkeyhint', isTouch ? 'enter' : 'send');
+
+    // Keep the layout inside the visible area when the on-screen keyboard opens.
+    // iOS Safari doesn't shrink 100dvh for the keyboard, which would push the header off screen.
+    if (window.visualViewport) {
+      const vv = window.visualViewport;
+      const fit = () => {
+        document.body.style.height = `${Math.round(vv.height * vv.scale)}px`;
+        if (window.scrollY) window.scrollTo(0, 0);
+        scrollToBottom();
+      };
+      vv.addEventListener('resize', fit);
+      fit();
+    }
 
     const SUGGESTIONS = ['မင်္ဂလာပါ ဘာတွေ ကူညီပေးနိုင်လဲ?', 'What services do you offer?', 'How do refunds work?'];
 
@@ -330,7 +427,7 @@
       } finally {
         busy = false;
         autoGrow();
-        input.focus();
+        if (!isTouch) input.focus();
       }
     }
 
@@ -368,7 +465,7 @@
 
     input.addEventListener('keydown', (e) => {
       // isComposing: don't send while an IME (e.g. a Burmese keyboard) is mid-composition.
-      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !isTouch) {
         e.preventDefault();
         submit(input.value);
       }
@@ -378,11 +475,11 @@
     clearBtn.addEventListener('click', () => {
       history = [];
       renderEmpty();
-      input.focus();
+      if (!isTouch) input.focus();
     });
 
     renderEmpty();
-    input.focus();
+    if (!isTouch) input.focus();
   </script>
 </body>
 </html>

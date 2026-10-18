@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#161a21" />
   <meta name="robots" content="noindex, nofollow" />
   <title>BarLoLo Chat Admin</title>
   <link rel="icon" type="image/jpeg" href="/logo-avatar.jpg" />
@@ -11,113 +12,137 @@
       color-scheme: dark;
       --bg: #0f1115;
       --panel: #161a21;
+      --panel-hover: #1c212a;
       --fg: #e7e9ee;
       --muted: #8a93a3;
       --border: #262c36;
       --accent: #3b6ef5;
-      --accent-hover: #5482ff;
       --ok: #4ade80;
-      --warn: #fbbf24;
       --danger: #f87171;
+
+      /* Layout: desktop (> 1024px) */
+      --content: 840px;
+      --gutter: 20px;
+      --tap: 40px;
     }
+    /* Tablet: 641px – 1024px */
+    @media (max-width: 1024px) {
+      :root { --content: 720px; --gutter: 16px; }
+    }
+    /* Mobile: ≤ 640px */
+    @media (max-width: 640px) {
+      :root { --content: 100%; --gutter: 12px; --tap: 44px; }
+    }
+
     * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
       margin: 0;
       min-height: 100vh;
+      min-height: 100dvh;
       background: var(--bg);
       color: var(--fg);
       font: 15px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans Myanmar", "Myanmar Text", Padauk, sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
-    [hidden] { display: none !important; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+    /* ---------- Header ---------- */
     header {
-      display: flex; align-items: center; gap: 10px;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 5;
       background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px max(var(--gutter), env(safe-area-inset-right)) 12px max(var(--gutter), env(safe-area-inset-left));
+      padding-top: max(12px, env(safe-area-inset-top));
+    }
+    .header-inner {
+      max-width: var(--content);
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     .avatar {
-      width: 32px; height: 32px; flex: none;
+      width: 34px; height: 34px; flex: none;
       border-radius: 50%;
       object-fit: cover;
       background: #000;
       box-shadow: 0 0 0 1px rgba(236, 72, 153, .55), 0 0 10px rgba(168, 85, 247, .35);
     }
-    header h1 { margin: 0; font-size: 1rem; font-weight: 600; }
-    header p { margin: 0; font-size: .8rem; color: var(--muted); }
-    .actions { margin-left: auto; display: flex; gap: 8px; }
+    .brand { min-width: 0; }
+    header h1 { margin: 0; font-size: 1.05rem; font-weight: 600; line-height: 1.3; white-space: nowrap; }
+    header p { margin: 0; font-size: .8rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ghost {
-      background: none; border: 1px solid var(--border); color: var(--muted);
-      border-radius: 8px; padding: 6px 10px; font: inherit; font-size: .8rem; cursor: pointer;
-      text-decoration: none; white-space: nowrap;
+      margin-left: auto;
+      flex: none;
+      display: inline-flex; align-items: center;
+      min-height: var(--tap);
+      padding: 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: .85rem;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: color .15s, border-color .15s, background .15s;
     }
-    .ghost:hover { color: var(--fg); border-color: var(--muted); }
-    .ghost.danger:hover { color: var(--danger); border-color: var(--danger); }
 
-    main { max-width: 720px; margin: 0 auto; padding: 32px 16px 48px; }
+    /* ---------- Page ---------- */
+    main {
+      max-width: var(--content);
+      margin: 0 auto;
+      padding: 32px max(var(--gutter), env(safe-area-inset-right)) calc(48px + env(safe-area-inset-bottom)) max(var(--gutter), env(safe-area-inset-left));
+    }
     .card {
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 16px;
-      padding: 20px;
+      padding: 24px;
     }
-    h2 { margin: 0 0 4px; font-size: 1.1rem; font-weight: 600; }
+    h2 { margin: 0 0 4px; font-size: 1.15rem; font-weight: 600; }
     .sub { margin: 0 0 16px; color: var(--muted); font-size: .875rem; }
 
-    /* Sign in */
-    #signin { max-width: 440px; margin: 8vh auto 0; }
-    label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 6px; }
-    .key-row { display: flex; gap: 8px; }
-    input[type=password] {
-      flex: 1; min-width: 0;
-      padding: 10px 12px; border-radius: 10px;
-      border: 1px solid var(--border); background: var(--bg); color: var(--fg); font: inherit;
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
     }
-    input[type=password]:focus { outline: 0; border-color: var(--accent); }
-    input.invalid { border-color: var(--danger); }
-    .primary {
-      flex: none;
-      padding: 0 16px; border: 0; border-radius: 10px;
-      background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
-    }
-    .primary:hover:not(:disabled) { background: var(--accent-hover); }
-    .primary:disabled { opacity: .5; cursor: wait; }
-    .msg { margin: 10px 0 0; font-size: .85rem; min-height: 1.4em; }
-    .msg.error { color: var(--danger); }
-    .hint { margin-top: 14px; font-size: .78rem; color: var(--muted); }
-    code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 4px; font-size: .9em; }
-
-    /* Uploader */
-    .stats { display: flex; gap: 12px; margin-bottom: 16px; }
     .stat {
-      flex: 1;
-      background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
-      padding: 10px 14px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
     }
-    .stat b { display: block; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+    .stat b { display: block; font-size: 1.4rem; font-variant-numeric: tabular-nums; }
     .stat span { font-size: .78rem; color: var(--muted); }
+
     .dropzone {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      min-height: 160px;
+      padding: 32px 16px;
       border: 2px dashed var(--border);
       border-radius: 14px;
-      padding: 36px 16px;
       text-align: center;
       color: var(--muted);
       cursor: pointer;
       transition: border-color .15s, background .15s;
     }
-    .dropzone:hover, .dropzone:focus-visible, .dropzone.over {
+    .dropzone:focus-visible, .dropzone.over {
       outline: 0; border-color: var(--accent); background: rgba(59, 110, 245, .08); color: var(--fg);
     }
+    .dropzone .icon { width: 32px; height: 32px; color: var(--accent); }
     .dropzone strong { color: var(--fg); font-size: 1rem; }
-    .dropzone small { display: block; margin-top: 6px; font-size: .78rem; }
+    .dropzone small { font-size: .78rem; max-width: 100%; overflow-wrap: anywhere; }
+    .touch-only { display: none; }
 
     .files { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
     .files li { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; }
     .file-top { display: flex; align-items: center; gap: 10px; font-size: .875rem; }
     .file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .file-status { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .file-status { flex: none; max-width: 60%; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
     .files li.done .file-status { color: var(--ok); }
-    .files li.failed .file-status { color: var(--danger); white-space: normal; text-align: right; max-width: 60%; }
+    .files li.failed .file-status { color: var(--danger); }
     .spinner {
       display: none; flex: none;
       width: 14px; height: 14px;
@@ -141,159 +166,101 @@
       background: rgba(15, 17, 21, .85); color: var(--fg); font-size: 1.1rem;
       pointer-events: none;
     }
-    @media (max-width: 600px) {
+
+    /* ---------- Hover effects: only for real pointers ---------- */
+    @media (hover: hover) and (pointer: fine) {
+      .ghost:hover { color: var(--fg); border-color: var(--muted); background: var(--panel-hover); }
+      .dropzone:hover { border-color: var(--accent); background: rgba(59, 110, 245, .06); color: var(--fg); }
+      .files li { transition: border-color .15s; }
+      .files li:hover { border-color: #333a46; }
+    }
+
+    /* ---------- Touch devices: no drag and drop ---------- */
+    @media (pointer: coarse) {
+      .pointer-only { display: none; }
+      .touch-only { display: inline; }
+    }
+
+    /* ---------- Mobile ---------- */
+    @media (max-width: 640px) {
+      header { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: 8px; }
+      .avatar { width: 30px; height: 30px; }
+      header h1 { font-size: .98rem; }
       header p { display: none; }
-      .stats { flex-direction: column; gap: 8px; }
+
+      main { padding-top: 16px; }
+      .card { padding: 16px; border-radius: 14px; }
+      .stat { padding: 10px 12px; }
+      .stat b { font-size: 1.2rem; }
+      .dropzone { min-height: 140px; padding: 24px 12px; }
+
+      /* File rows: name on top, status underneath, full width */
+      .file-top { flex-wrap: wrap; row-gap: 2px; }
+      .file-name { flex-basis: calc(100% - 24px); }
+      .file-status { flex: 1 1 100%; max-width: none; text-align: left; font-size: .8rem; }
+    }
+    @media (max-width: 380px) {
+      .stats { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <header>
-    <img class="avatar" src="/logo-avatar.jpg" alt="" />
-    <div>
-      <h1>BarLoLo Chat Admin</h1>
-      <p>Add documents the chat assistant can answer from</p>
-    </div>
-    <div class="actions">
+    <div class="header-inner">
+      <img class="avatar" src="/logo-avatar.jpg" alt="" />
+      <div class="brand">
+        <h1>BarLoLo Chat Admin</h1>
+        <p>Add documents the chat assistant can answer from</p>
+      </div>
       <a class="ghost" href="/">Open chat</a>
-      <button id="logout" class="ghost danger" type="button" hidden>Reset key</button>
     </div>
   </header>
 
   <main>
-    <section id="signin" class="card" hidden>
-      <h2>Sign in</h2>
-      <p class="sub">Enter the upload key to manage documents.</p>
-      <form id="signin-form">
-        <label for="key">Upload key</label>
-        <div class="key-row">
-          <input id="key" type="password" autocomplete="current-password" placeholder="INGEST_SECRET" required />
-          <button id="signin-btn" class="primary" type="submit">Continue</button>
-        </div>
-        <p class="msg" id="signin-msg" role="alert"></p>
-      </form>
-      <p class="hint">This is the <code>INGEST_SECRET</code> value from your <code>.env</code> (or Vercel environment variables). It's remembered in this browser until you click <b>Reset key</b>.</p>
-    </section>
-
-    <section id="uploader" hidden>
-      <div class="stats">
-        <div class="stat"><b id="stat-files">0</b><span>files added this session</span></div>
-        <div class="stat"><b id="stat-chunks">0</b><span>chunks stored in Pinecone</span></div>
+    <div class="stats">
+      <div class="stat"><b id="stat-files">0</b><span>files added this session</span></div>
+      <div class="stat"><b id="stat-chunks">0</b><span>chunks stored in Pinecone</span></div>
+    </div>
+    <div class="card">
+      <h2>Upload documents</h2>
+      <p class="sub">Uploading a file with the same name again replaces its old content.</p>
+      <div class="dropzone" id="dropzone" role="button" tabindex="0">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 16V4m0 0-4 4m4-4 4 4" /><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+        </svg>
+        <span class="pointer-only"><strong>Drop files here</strong> or click to browse</span>
+        <span class="touch-only"><strong>Tap to choose files</strong></span>
+        <small id="dropzone-types">PDF, Word (.docx), Excel (.xlsx/.xls/.csv), images (.png/.jpg), text · up to 4 MB each</small>
       </div>
-      <div class="card">
-        <h2>Upload documents</h2>
-        <p class="sub">Uploading a file with the same name again replaces its old content.</p>
-        <div class="dropzone" id="dropzone" role="button" tabindex="0">
-          <strong>Drop files here</strong> or click to browse
-          <small id="dropzone-types">PDF, Word (.docx), Excel (.xlsx/.xls/.csv), images (.png/.jpg), text</small>
-        </div>
-        <input id="file-input" type="file" multiple hidden />
-        <ul class="files" id="file-list"></ul>
-      </div>
-    </section>
+      <input id="file-input" type="file" multiple hidden />
+      <ul class="files" id="file-list"></ul>
+    </div>
   </main>
 
   <script>
-    const KEY_STORAGE = 'rag-admin-key';
-    const signin = document.getElementById('signin');
-    const signinForm = document.getElementById('signin-form');
-    const signinBtn = document.getElementById('signin-btn');
-    const signinMsg = document.getElementById('signin-msg');
-    const keyInput = document.getElementById('key');
-    const uploader = document.getElementById('uploader');
-    const logoutBtn = document.getElementById('logout');
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('file-input');
     const fileList = document.getElementById('file-list');
     const statFiles = document.getElementById('stat-files');
     const statChunks = document.getElementById('stat-chunks');
 
-    let apiKey = '';
-    let limits = { maxUploadMb: 4, extensions: ['.pdf', '.docx', '.xlsx', '.xls', '.csv', '.png', '.jpg', '.jpeg'] };
+    let limits = { maxUploadMb: 4, extensions: ['.pdf', '.docx', '.xlsx', '.xls', '.csv', '.png', '.jpg', '.jpeg', '.webp', '.md', '.txt'] };
     const queue = [];
     let uploading = false;
-    let totals = { files: 0, chunks: 0 };
+    const totals = { files: 0, chunks: 0 };
 
-    // localStorage can be unavailable (private mode, blocked storage); the page still works, it just won't remember.
-    const store = {
-      get() { try { return localStorage.getItem(KEY_STORAGE) || ''; } catch { return ''; } },
-      set(v) { try { localStorage.setItem(KEY_STORAGE, v); } catch {} },
-      clear() { try { localStorage.removeItem(KEY_STORAGE); } catch {} },
-    };
-
-    // ---------- Auth ----------
-    async function verify(key) {
-      const res = await fetch('/api/upload', { headers: { Authorization: `Bearer ${key}` } });
-      if (res.status === 401) return null;
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || `Server error (${res.status})`);
-      return data;
-    }
-
-    function showSignin(message = '') {
-      apiKey = '';
-      uploader.hidden = true;
-      logoutBtn.hidden = true;
-      signin.hidden = false;
-      signinMsg.textContent = message;
-      signinMsg.className = message ? 'msg error' : 'msg';
-      keyInput.classList.toggle('invalid', Boolean(message));
-      keyInput.value = '';
-      keyInput.focus();
-    }
-
-    function showUploader(key, info) {
-      apiKey = key;
-      if (info?.extensions) limits = info;
+    function applyLimits() {
       fileInput.accept = limits.extensions.join(',');
       document.getElementById('dropzone-types').textContent =
         `${limits.extensions.join(' ')} · up to ${limits.maxUploadMb} MB each`;
-      signin.hidden = true;
-      uploader.hidden = false;
-      logoutBtn.hidden = false;
     }
+    applyLimits();
 
-    signinForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const key = keyInput.value.trim();
-      if (!key) return;
-      signinBtn.disabled = true;
-      signinMsg.className = 'msg';
-      signinMsg.textContent = 'Checking…';
-      try {
-        const info = await verify(key);
-        if (!info) return showSignin('That key is not correct.');
-        store.set(key);
-        showUploader(key, info);
-      } catch (err) {
-        signinMsg.className = 'msg error';
-        signinMsg.textContent = err.message;
-      } finally {
-        signinBtn.disabled = false;
-      }
-    });
-    keyInput.addEventListener('input', () => keyInput.classList.remove('invalid'));
-
-    logoutBtn.addEventListener('click', () => {
-      store.clear();
-      showSignin();
-    });
-
-    (async function init() {
-      const saved = store.get();
-      if (!saved) return showSignin();
-      try {
-        const info = await verify(saved);
-        if (!info) {
-          store.clear();
-          return showSignin('The saved key is no longer valid. Enter the current one.');
-        }
-        showUploader(saved, info);
-      } catch {
-        // Server unreachable: keep the saved key and let uploads report the error.
-        showUploader(saved);
-      }
-    })();
+    // Pick up the server's actual limits; the defaults above are used if this fails.
+    fetch('/api/upload')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((info) => { if (info?.extensions) { limits = info; applyLimits(); } })
+      .catch(() => {});
 
     // ---------- Picking files ----------
     dropzone.onclick = () => fileInput.click();
@@ -305,8 +272,8 @@
 
     let dragDepth = 0;
     const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
-    window.addEventListener('dragenter', (e) => { if (hasFiles(e) && apiKey && ++dragDepth === 1) document.body.classList.add('dragging'); });
-    window.addEventListener('dragleave', (e) => { if (hasFiles(e) && apiKey && --dragDepth === 0) document.body.classList.remove('dragging'); });
+    window.addEventListener('dragenter', (e) => { if (hasFiles(e) && ++dragDepth === 1) document.body.classList.add('dragging'); });
+    window.addEventListener('dragleave', (e) => { if (hasFiles(e) && --dragDepth === 0) document.body.classList.remove('dragging'); });
     window.addEventListener('dragover', (e) => { if (hasFiles(e)) e.preventDefault(); });
     window.addEventListener('drop', (e) => {
       if (!hasFiles(e)) return;
@@ -314,7 +281,7 @@
       dragDepth = 0;
       document.body.classList.remove('dragging');
       dropzone.classList.remove('over');
-      if (apiKey) enqueue(e.dataTransfer.files);
+      enqueue(e.dataTransfer.files);
     });
 
     // ---------- Upload queue ----------
@@ -363,14 +330,6 @@
           statFiles.textContent = totals.files;
           statChunks.textContent = totals.chunks.toLocaleString();
         } catch (err) {
-          if (err.status === 401) {
-            // Key was changed on the server: stop, drop the saved key, and ask again.
-            setStatus(item, 'failed', 'Not uploaded: key rejected');
-            for (const rest of queue.splice(0)) setStatus(rest, 'failed', 'Not uploaded: key rejected');
-            store.clear();
-            uploading = false;
-            return showSignin('Your key was rejected. Sign in again, then re-add the files.');
-          }
           setStatus(item, 'failed', err.message);
         }
       }
@@ -384,7 +343,6 @@
         const form = new FormData();
         form.append('file', item.file);
         xhr.open('POST', '/api/upload');
-        xhr.setRequestHeader('Authorization', `Bearer ${apiKey}`);
         xhr.upload.onprogress = (e) => {
           if (!e.lengthComputable) return;
           const pct = (e.loaded / e.total) * 100;
@@ -398,8 +356,9 @@
           if (xhr.status >= 200 && xhr.status < 300) return resolve(data);
           const message =
             xhr.status === 413 ? data.error || 'File too large'
-            : data.files?.[0]?.error || data.error || `Upload failed (${xhr.status})`;
-          reject(Object.assign(new Error(message), { status: xhr.status }));
+            : data.files?.[0]?.error || data.error
+            || (xhr.responseText.includes('FUNCTION_INVOCATION_FAILED') ? 'Server crashed (see Vercel function logs)' : `Upload failed (${xhr.status})`);
+          reject(new Error(message));
         };
         setStatus(item, 'uploading', 'Uploading 0%', 0);
         xhr.send(form);

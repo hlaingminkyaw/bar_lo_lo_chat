@@ -10,7 +10,6 @@ export default route(['GET'], async (_req, res) => {
       PINECONE_API_KEY: has('PINECONE_API_KEY'),
       PINECONE_INDEX: has('PINECONE_INDEX'),
       OPENROUTER_API_KEY: has('OPENROUTER_API_KEY'),
-      INGEST_SECRET: has('INGEST_SECRET'),
     },
     llmModel: config.openrouterModel,
     embedding: { provider: config.embeddingProvider, model: config.embeddingModel },

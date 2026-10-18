@@ -51,10 +51,6 @@ vercel.json        function config (60s max duration)
 
 1. **Pinecone**: sign up at <https://app.pinecone.io>. The Starter plan is free. Copy the key from **API Keys**.
 2. **OpenRouter**: sign up at <https://openrouter.ai>, then create a key at <https://openrouter.ai/settings/keys>.
-3. **Ingest secret**: generate a random string to protect the ingest endpoint:
-   ```bash
-   openssl rand -hex 32
-   ```
 
 ## 2. Run locally
 
@@ -62,7 +58,7 @@ Requires Node.js 20 or newer.
 
 ```bash
 npm install
-cp .env.example .env        # then fill in PINECONE_API_KEY, OPENROUTER_API_KEY, INGEST_SECRET
+cp .env.example .env        # then fill in PINECONE_API_KEY, OPENROUTER_API_KEY
 npm run check               # offline sanity check, no keys needed
 ```
 
@@ -83,7 +79,6 @@ npm run ingest -- ./my-docs       # any folder or file list
 ```bash
 # Option B: through the HTTP endpoint (start the server first, see below)
 curl -X POST http://localhost:3000/api/ingest \
-  -H "Authorization: Bearer $INGEST_SECRET" \
   -H "Content-Type: application/json" \
   -d '{"id":"faq","source":"faq.md","text":"Annual plans can be refunded within 30 days..."}'
 ```
@@ -119,7 +114,6 @@ vercel                      # first deploy: links/creates the project (preview U
 vercel env add PINECONE_API_KEY production
 vercel env add PINECONE_INDEX production
 vercel env add OPENROUTER_API_KEY production
-vercel env add INGEST_SECRET production
 # optional: OPENROUTER_MODEL, EMBEDDING_PROVIDER, EMBEDDING_MODEL, ALLOWED_ORIGIN ...
 
 vercel --prod               # production deploy
@@ -182,7 +176,7 @@ Response:
 
 ### `POST /api/ingest`
 
-Requires the header `Authorization: Bearer <INGEST_SECRET>`.
+No authentication (see **Security**).
 
 ```jsonc
 // single document
@@ -195,13 +189,12 @@ Vector IDs are `<docId>#<chunkIndex>`. Re-ingesting a document with the same `id
 
 ### `POST /api/upload`
 
-Requires the header `Authorization: Bearer <INGEST_SECRET>`. Send `multipart/form-data` with one or more files in the `file` field (and an optional `namespace` field). The admin page at **`/admin`** does this for you; the public chat page has no upload UI. `GET /api/upload` with the same header just verifies the key.
+No authentication (see **Security**). Send `multipart/form-data` with one or more files in the `file` field (and an optional `namespace` field). The admin page at **`/admin`** does this for you; the public chat page has no upload UI. `GET /api/upload` returns the upload limits.
 
 Each chunk is stored in Pinecone with metadata `{ text, source, uploadedAt, fileType, docId, chunk }` (`uploadedAt` is milliseconds since epoch). Uploaded files are held in memory only; nothing is written to disk.
 
 ```bash
 curl -X POST http://localhost:3000/api/upload \
-  -H "Authorization: Bearer $INGEST_SECRET" \
   -F file=@pricing.pdf -F file=@plans.xlsx
 ```
 
@@ -233,7 +226,7 @@ These limits were current when this README was written; check each provider for 
 
 ## Security
 
-- `/api/ingest` returns an error if `INGEST_SECRET` is unset, so nobody can write to your index anonymously.
+- `/admin`, `/api/upload` and `/api/ingest` have **no authentication**, by choice for personal use. Anyone who finds the URL can add documents (changing what the bot answers) and spend OpenRouter credits on image OCR. To lock them down without code changes, turn on Vercel **Deployment Protection**.
 - `/api/chat` is public. Anyone with the URL can use up your OpenRouter quota. Set `ALLOWED_ORIGIN` to your frontend's domain. If you need stricter control, add auth or rate limiting (for example, Vercel Firewall rules).
 - Clients can only send `user`/`assistant` turns in `history`. Any `system` message they send is dropped.
 
