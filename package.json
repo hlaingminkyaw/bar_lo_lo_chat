@@ -1,0 +1,28 @@
+{
+  "name": "rag-chat-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "RAG backend on Vercel: Pinecone for retrieval, OpenRouter for generation",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node --watch scripts/dev-server.js",
+    "dev:vercel": "vercel dev",
+    "setup-index": "node scripts/create-index.js",
+    "ingest": "node scripts/ingest.js",
+    "check": "node scripts/smoke-test.js"
+  },
+  "dependencies": {
+    "@pinecone-database/pinecone": "9.0.0",
+    "mammoth": "^1.13.0",
+    "multer": "^2.4.0",
+    "pdf-parse": "^2.4.5",
+    "tesseract.js": "^7.0.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.3"
+  }
+}

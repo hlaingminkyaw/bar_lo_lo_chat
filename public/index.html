@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>BarLoLo Chat</title>
+  <link rel="icon" type="image/jpeg" href="/logo-avatar.jpg" />
+  <link rel="apple-touch-icon" href="/logo-avatar.jpg" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --panel: #161a21;
+      --bubble-bot: #1d222b;
+      --bubble-user: #3b6ef5;
+      --fg: #e7e9ee;
+      --muted: #8a93a3;
+      --border: #262c36;
+      --accent: #3b6ef5;
+      --accent-hover: #5482ff;
+      --danger: #f87171;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 15px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans Myanmar", "Myanmar Text", Padauk, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      flex: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+    .avatar {
+      width: 32px; height: 32px; flex: none;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #000;
+      box-shadow: 0 0 0 1px rgba(236, 72, 153, .55), 0 0 10px rgba(168, 85, 247, .35);
+    }
+    header h1 { margin: 0; font-size: 1rem; font-weight: 600; }
+    header p { margin: 0; font-size: .8rem; color: var(--muted); }
+    #clear {
+      margin-left: auto;
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 8px; padding: 6px 10px; font: inherit; font-size: .8rem; cursor: pointer;
+    }
+    #clear:hover { color: var(--fg); border-color: var(--muted); }
+
+    #log {
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scroll-behavior: smooth;
+    }
+    .thread {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .row { display: flex; gap: 10px; align-items: flex-end; }
+    .row.user { justify-content: flex-end; }
+    .row .avatar { width: 28px; height: 28px; font-size: 12px; }
+    .bubble {
+      max-width: min(80%, 620px);
+      padding: 10px 14px;
+      border-radius: 18px;
+      overflow-wrap: anywhere;
+      line-height: 1.7;
+    }
+    .row.user .bubble {
+      background: var(--bubble-user);
+      color: #fff;
+      border-bottom-right-radius: 6px;
+      white-space: pre-wrap;
+    }
+    .row.bot .bubble, .row.error .bubble {
+      background: var(--bubble-bot);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 6px;
+    }
+    .row.error .bubble { border-color: var(--danger); color: var(--danger); }
+    .bubble p { margin: 0 0 .6em; }
+    .bubble p:last-child, .bubble ul:last-child, .bubble ol:last-child { margin-bottom: 0; }
+    .bubble ul, .bubble ol { margin: 0 0 .6em; padding-left: 1.3em; }
+    .bubble code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+
+    .typing { display: inline-flex; gap: 4px; padding: 4px 0; }
+    .typing span {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--muted);
+      animation: blink 1.2s infinite ease-in-out;
+    }
+    .typing span:nth-child(2) { animation-delay: .15s; }
+    .typing span:nth-child(3) { animation-delay: .3s; }
+    @keyframes blink { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
+    .empty {
+      margin: 12vh auto 0;
+      text-align: center;
+      color: var(--muted);
+      max-width: 460px;
+    }
+    .empty .hero {
+      display: block;
+      width: 168px; height: 168px;
+      margin: 0 auto 16px;
+      border-radius: 24px;
+      object-fit: cover;
+      box-shadow: 0 0 0 1px rgba(236, 72, 153, .35), 0 8px 40px rgba(168, 85, 247, .3);
+    }
+    .empty h2 { color: var(--fg); font-size: 1.2rem; margin: 0 0 6px; font-weight: 600; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; }
+    .chips button {
+      background: var(--panel); border: 1px solid var(--border); color: var(--fg);
+      border-radius: 999px; padding: 7px 14px; font: inherit; font-size: .85rem; cursor: pointer;
+    }
+    .chips button:hover { border-color: var(--accent); }
+
+    footer {
+      flex: none;
+      position: sticky;
+      bottom: 0;
+      background: linear-gradient(to top, var(--bg) 70%, transparent);
+      padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+    }
+    form {
+      max-width: 760px;
+      margin: 0 auto;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 8px 8px 8px 14px;
+      transition: border-color .15s;
+    }
+    form:focus-within { border-color: var(--accent); }
+    textarea {
+      flex: 1; min-width: 0;
+      resize: none;
+      border: 0; outline: 0;
+      background: transparent;
+      color: var(--fg);
+      font: inherit;
+      line-height: 1.6;
+      padding: 6px 0;
+      max-height: 180px;
+    }
+    textarea::placeholder { color: var(--muted); }
+    #send {
+      flex: none;
+      height: 38px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    #send:hover:not(:disabled) { background: var(--accent-hover); }
+    #send:disabled { opacity: .45; cursor: not-allowed; }
+    .note { max-width: 760px; margin: 6px auto 0; text-align: center; font-size: .72rem; color: var(--muted); }
+
+    @media (max-width: 600px) {
+      .bubble { max-width: 88%; }
+      .row.bot .avatar, .row.error .avatar { display: none; }
+      header p { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img class="avatar" src="/logo-avatar.jpg" alt="" />
+    <div>
+      <h1>BarLoLo Chat</h1>
+      <p>Ask anything about our services</p>
+    </div>
+    <button id="clear" type="button" title="Start a new conversation">New chat</button>
+  </header>
+
+  <main id="log">
+    <div class="thread" id="thread"></div>
+  </main>
+
+  <footer>
+    <form id="form">
+      <textarea id="q" rows="1" placeholder="Type a message…" autocomplete="off" aria-label="Message"></textarea>
+      <button id="send" type="submit" disabled>Send</button>
+    </form>
+    <div class="note">Enter to send · Shift + Enter for a new line</div>
+  </footer>
+
+  <script>
+    const log = document.getElementById('log');
+    const thread = document.getElementById('thread');
+    const form = document.getElementById('form');
+    const input = document.getElementById('q');
+    const send = document.getElementById('send');
+    const clearBtn = document.getElementById('clear');
+    const MAX_HISTORY = 12;
+    let history = [];
+    let busy = false;
+
+    const SUGGESTIONS = ['မင်္ဂလာပါ ဘာတွေ ကူညီပေးနိုင်လဲ?', 'What services do you offer?', 'How do refunds work?'];
+
+    function renderEmpty() {
+      thread.innerHTML = `
+        <div class="empty">
+          <img class="hero" src="/logo.jpg" alt="BarLoLo" />
+          <h2>How can I help you today?</h2>
+          <div>Ask a question in English or မြန်မာ.</div>
+          <div class="chips"></div>
+        </div>`;
+      const chips = thread.querySelector('.chips');
+      for (const text of SUGGESTIONS) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = text;
+        b.onclick = () => submit(text);
+        chips.appendChild(b);
+      }
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // Small, safe markdown subset: paragraphs, bullet/numbered lists, **bold**, *italic*, `code`.
+    function renderMarkdown(text) {
+      const inline = (s) => escapeHtml(s)
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[^*])\*(?!\s)(.+?)\*(?!\*)/g, '$1<em>$2</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+      const out = [];
+      let list = null;
+      const closeList = () => { if (list) { out.push(`</${list}>`); list = null; } };
+      for (const raw of text.split('\n')) {
+        const line = raw.trim();
+        const bullet = line.match(/^[-*•]\s+(.*)/);
+        const numbered = line.match(/^\d+[.)]\s+(.*)/);
+        if (bullet || numbered) {
+          const type = bullet ? 'ul' : 'ol';
+          if (list !== type) { closeList(); out.push(`<${type}>`); list = type; }
+          out.push(`<li>${inline((bullet || numbered)[1])}</li>`);
+        } else if (!line) {
+          closeList();
+        } else {
+          closeList();
+          out.push(`<p>${inline(line.replace(/^#+\s*/, ''))}</p>`);
+        }
+      }
+      closeList();
+      return out.join('');
+    }
+
+    function addMessage(role, text) {
+      thread.querySelector('.empty')?.remove();
+      const row = document.createElement('div');
+      row.className = `row ${role}`;
+      if (role !== 'user') {
+        const av = document.createElement('img');
+        av.className = 'avatar';
+        av.src = '/logo-avatar.jpg';
+        av.alt = '';
+        row.appendChild(av);
+      }
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      if (role === 'bot') bubble.innerHTML = renderMarkdown(text);
+      else bubble.textContent = text;
+      row.appendChild(bubble);
+      thread.appendChild(row);
+      scrollToBottom();
+      return row;
+    }
+
+    function addTyping() {
+      const row = addMessage('bot', '');
+      row.querySelector('.bubble').innerHTML = '<div class="typing" aria-label="Assistant is typing"><span></span><span></span><span></span></div>';
+      scrollToBottom();
+      return row;
+    }
+
+    function scrollToBottom() {
+      requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
+    }
+
+    function autoGrow() {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 180) + 'px';
+      send.disabled = busy || !input.value.trim();
+    }
+
+    async function submit(message) {
+      message = message.trim();
+      if (!message || busy) return;
+      busy = true;
+      addMessage('user', message);
+      input.value = '';
+      autoGrow();
+      const typing = addTyping();
+
+      try {
+        const data = await askServer(message);
+        typing.remove();
+        addMessage('bot', data.answer);
+        history.push({ role: 'user', content: message }, { role: 'assistant', content: data.answer });
+      } catch (err) {
+        // Technical details go to the console; the user gets a friendly reply in their language.
+        console.error('Chat request failed:', err);
+        typing.remove();
+        addMessage('bot', fallbackReply(message));
+      } finally {
+        busy = false;
+        autoGrow();
+        input.focus();
+      }
+    }
+
+    // Retries once if the server couldn't be reached at all (e.g. mid-restart).
+    async function askServer(message, retried = false) {
+      let res;
+      try {
+        res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, history: history.slice(-MAX_HISTORY) }),
+        });
+      } catch (err) {
+        if (retried) throw err;
+        await new Promise((r) => setTimeout(r, 1500));
+        return askServer(message, true);
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.answer) throw new Error(data.error || `HTTP ${res.status}`);
+      return data;
+    }
+
+    const isBurmese = (text) => /[က-႟]/.test(text);
+
+    function fallbackReply(message) {
+      return isBurmese(message)
+        ? 'တောင်းပန်ပါတယ်၊ မေးထားသောမေးခွန်းအတွက် အဖြေ မရှိသေးပါ။ ခဏနေမှ ထပ်မံမေးမြန်းကြည့်ပေးပါ။'
+        : "Sorry, I don't have an answer for that right now. Please try again in a moment.";
+    }
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      submit(input.value);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      // isComposing: don't send while an IME (e.g. a Burmese keyboard) is mid-composition.
+      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        submit(input.value);
+      }
+    });
+    input.addEventListener('input', autoGrow);
+
+    clearBtn.addEventListener('click', () => {
+      history = [];
+      renderEmpty();
+      input.focus();
+    });
+
+    renderEmpty();
+    input.focus();
+  </script>
+</body>
+</html>

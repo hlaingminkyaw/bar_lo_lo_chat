@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>BarLoLo Chat Admin</title>
+  <link rel="icon" type="image/jpeg" href="/logo-avatar.jpg" />
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --panel: #161a21;
+      --fg: #e7e9ee;
+      --muted: #8a93a3;
+      --border: #262c36;
+      --accent: #3b6ef5;
+      --accent-hover: #5482ff;
+      --ok: #4ade80;
+      --warn: #fbbf24;
+      --danger: #f87171;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--fg);
+      font: 15px/1.6 system-ui, -apple-system, "Segoe UI", "Noto Sans Myanmar", "Myanmar Text", Padauk, sans-serif;
+    }
+    [hidden] { display: none !important; }
+
+    header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+    .avatar {
+      width: 32px; height: 32px; flex: none;
+      border-radius: 50%;
+      object-fit: cover;
+      background: #000;
+      box-shadow: 0 0 0 1px rgba(236, 72, 153, .55), 0 0 10px rgba(168, 85, 247, .35);
+    }
+    header h1 { margin: 0; font-size: 1rem; font-weight: 600; }
+    header p { margin: 0; font-size: .8rem; color: var(--muted); }
+    .actions { margin-left: auto; display: flex; gap: 8px; }
+    .ghost {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 8px; padding: 6px 10px; font: inherit; font-size: .8rem; cursor: pointer;
+      text-decoration: none; white-space: nowrap;
+    }
+    .ghost:hover { color: var(--fg); border-color: var(--muted); }
+    .ghost.danger:hover { color: var(--danger); border-color: var(--danger); }
+
+    main { max-width: 720px; margin: 0 auto; padding: 32px 16px 48px; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    h2 { margin: 0 0 4px; font-size: 1.1rem; font-weight: 600; }
+    .sub { margin: 0 0 16px; color: var(--muted); font-size: .875rem; }
+
+    /* Sign in */
+    #signin { max-width: 440px; margin: 8vh auto 0; }
+    label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 6px; }
+    .key-row { display: flex; gap: 8px; }
+    input[type=password] {
+      flex: 1; min-width: 0;
+      padding: 10px 12px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--fg); font: inherit;
+    }
+    input[type=password]:focus { outline: 0; border-color: var(--accent); }
+    input.invalid { border-color: var(--danger); }
+    .primary {
+      flex: none;
+      padding: 0 16px; border: 0; border-radius: 10px;
+      background: var(--accent); color: #fff; font: inherit; font-weight: 600; cursor: pointer;
+    }
+    .primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .primary:disabled { opacity: .5; cursor: wait; }
+    .msg { margin: 10px 0 0; font-size: .85rem; min-height: 1.4em; }
+    .msg.error { color: var(--danger); }
+    .hint { margin-top: 14px; font-size: .78rem; color: var(--muted); }
+    code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+
+    /* Uploader */
+    .stats { display: flex; gap: 12px; margin-bottom: 16px; }
+    .stat {
+      flex: 1;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+      padding: 10px 14px;
+    }
+    .stat b { display: block; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+    .stat span { font-size: .78rem; color: var(--muted); }
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 14px;
+      padding: 36px 16px;
+      text-align: center;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color .15s, background .15s;
+    }
+    .dropzone:hover, .dropzone:focus-visible, .dropzone.over {
+      outline: 0; border-color: var(--accent); background: rgba(59, 110, 245, .08); color: var(--fg);
+    }
+    .dropzone strong { color: var(--fg); font-size: 1rem; }
+    .dropzone small { display: block; margin-top: 6px; font-size: .78rem; }
+
+    .files { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .files li { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; }
+    .file-top { display: flex; align-items: center; gap: 10px; font-size: .875rem; }
+    .file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-status { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .files li.done .file-status { color: var(--ok); }
+    .files li.failed .file-status { color: var(--danger); white-space: normal; text-align: right; max-width: 60%; }
+    .spinner {
+      display: none; flex: none;
+      width: 14px; height: 14px;
+      border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    .files li.uploading .spinner, .files li.processing .spinner { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .bar { height: 4px; margin-top: 8px; border-radius: 4px; background: var(--border); overflow: hidden; }
+    .bar span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s; }
+    .files li.processing .bar span { width: 100% !important; animation: pulse 1.2s infinite ease-in-out; }
+    .files li.done .bar span { width: 100%; background: var(--ok); }
+    .files li.failed .bar span { width: 100%; background: var(--danger); }
+    @keyframes pulse { 50% { opacity: .4; } }
+
+    body.dragging::after {
+      content: 'Drop files to add them to the knowledge base';
+      position: fixed; inset: 12px; z-index: 10;
+      display: grid; place-items: center;
+      border: 2px dashed var(--accent); border-radius: 16px;
+      background: rgba(15, 17, 21, .85); color: var(--fg); font-size: 1.1rem;
+      pointer-events: none;
+    }
+    @media (max-width: 600px) {
+      header p { display: none; }
+      .stats { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img class="avatar" src="/logo-avatar.jpg" alt="" />
+    <div>
+      <h1>BarLoLo Chat Admin</h1>
+      <p>Add documents the chat assistant can answer from</p>
+    </div>
+    <div class="actions">
+      <a class="ghost" href="/">Open chat</a>
+      <button id="logout" class="ghost danger" type="button" hidden>Reset key</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="signin" class="card" hidden>
+      <h2>Sign in</h2>
+      <p class="sub">Enter the upload key to manage documents.</p>
+      <form id="signin-form">
+        <label for="key">Upload key</label>
+        <div class="key-row">
+          <input id="key" type="password" autocomplete="current-password" placeholder="INGEST_SECRET" required />
+          <button id="signin-btn" class="primary" type="submit">Continue</button>
+        </div>
+        <p class="msg" id="signin-msg" role="alert"></p>
+      </form>
+      <p class="hint">This is the <code>INGEST_SECRET</code> value from your <code>.env</code> (or Vercel environment variables). It's remembered in this browser until you click <b>Reset key</b>.</p>
+    </section>
+
+    <section id="uploader" hidden>
+      <div class="stats">
+        <div class="stat"><b id="stat-files">0</b><span>files added this session</span></div>
+        <div class="stat"><b id="stat-chunks">0</b><span>chunks stored in Pinecone</span></div>
+      </div>
+      <div class="card">
+        <h2>Upload documents</h2>
+        <p class="sub">Uploading a file with the same name again replaces its old content.</p>
+        <div class="dropzone" id="dropzone" role="button" tabindex="0">
+          <strong>Drop files here</strong> or click to browse
+          <small id="dropzone-types">PDF, Word (.docx), Excel (.xlsx/.xls/.csv), images (.png/.jpg), text</small>
+        </div>
+        <input id="file-input" type="file" multiple hidden />
+        <ul class="files" id="file-list"></ul>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const KEY_STORAGE = 'rag-admin-key';
+    const signin = document.getElementById('signin');
+    const signinForm = document.getElementById('signin-form');
+    const signinBtn = document.getElementById('signin-btn');
+    const signinMsg = document.getElementById('signin-msg');
+    const keyInput = document.getElementById('key');
+    const uploader = document.getElementById('uploader');
+    const logoutBtn = document.getElementById('logout');
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const fileList = document.getElementById('file-list');
+    const statFiles = document.getElementById('stat-files');
+    const statChunks = document.getElementById('stat-chunks');
+
+    let apiKey = '';
+    let limits = { maxUploadMb: 4, extensions: ['.pdf', '.docx', '.xlsx', '.xls', '.csv', '.png', '.jpg', '.jpeg'] };
+    const queue = [];
+    let uploading = false;
+    let totals = { files: 0, chunks: 0 };
+
+    // localStorage can be unavailable (private mode, blocked storage); the page still works, it just won't remember.
+    const store = {
+      get() { try { return localStorage.getItem(KEY_STORAGE) || ''; } catch { return ''; } },
+      set(v) { try { localStorage.setItem(KEY_STORAGE, v); } catch {} },
+      clear() { try { localStorage.removeItem(KEY_STORAGE); } catch {} },
+    };
+
+    // ---------- Auth ----------
+    async function verify(key) {
+      const res = await fetch('/api/upload', { headers: { Authorization: `Bearer ${key}` } });
+      if (res.status === 401) return null;
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Server error (${res.status})`);
+      return data;
+    }
+
+    function showSignin(message = '') {
+      apiKey = '';
+      uploader.hidden = true;
+      logoutBtn.hidden = true;
+      signin.hidden = false;
+      signinMsg.textContent = message;
+      signinMsg.className = message ? 'msg error' : 'msg';
+      keyInput.classList.toggle('invalid', Boolean(message));
+      keyInput.value = '';
+      keyInput.focus();
+    }
+
+    function showUploader(key, info) {
+      apiKey = key;
+      if (info?.extensions) limits = info;
+      fileInput.accept = limits.extensions.join(',');
+      document.getElementById('dropzone-types').textContent =
+        `${limits.extensions.join(' ')} · up to ${limits.maxUploadMb} MB each`;
+      signin.hidden = true;
+      uploader.hidden = false;
+      logoutBtn.hidden = false;
+    }
+
+    signinForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const key = keyInput.value.trim();
+      if (!key) return;
+      signinBtn.disabled = true;
+      signinMsg.className = 'msg';
+      signinMsg.textContent = 'Checking…';
+      try {
+        const info = await verify(key);
+        if (!info) return showSignin('That key is not correct.');
+        store.set(key);
+        showUploader(key, info);
+      } catch (err) {
+        signinMsg.className = 'msg error';
+        signinMsg.textContent = err.message;
+      } finally {
+        signinBtn.disabled = false;
+      }
+    });
+    keyInput.addEventListener('input', () => keyInput.classList.remove('invalid'));
+
+    logoutBtn.addEventListener('click', () => {
+      store.clear();
+      showSignin();
+    });
+
+    (async function init() {
+      const saved = store.get();
+      if (!saved) return showSignin();
+      try {
+        const info = await verify(saved);
+        if (!info) {
+          store.clear();
+          return showSignin('The saved key is no longer valid. Enter the current one.');
+        }
+        showUploader(saved, info);
+      } catch {
+        // Server unreachable: keep the saved key and let uploads report the error.
+        showUploader(saved);
+      }
+    })();
+
+    // ---------- Picking files ----------
+    dropzone.onclick = () => fileInput.click();
+    dropzone.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } };
+    fileInput.onchange = () => { enqueue(fileInput.files); fileInput.value = ''; };
+
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('over'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('over'));
+
+    let dragDepth = 0;
+    const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+    window.addEventListener('dragenter', (e) => { if (hasFiles(e) && apiKey && ++dragDepth === 1) document.body.classList.add('dragging'); });
+    window.addEventListener('dragleave', (e) => { if (hasFiles(e) && apiKey && --dragDepth === 0) document.body.classList.remove('dragging'); });
+    window.addEventListener('dragover', (e) => { if (hasFiles(e)) e.preventDefault(); });
+    window.addEventListener('drop', (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepth = 0;
+      document.body.classList.remove('dragging');
+      dropzone.classList.remove('over');
+      if (apiKey) enqueue(e.dataTransfer.files);
+    });
+
+    // ---------- Upload queue ----------
+    function enqueue(files) {
+      for (const file of files) {
+        const li = document.createElement('li');
+        li.innerHTML = '<div class="file-top"><span class="spinner"></span><span class="file-name"></span><span class="file-status"></span></div><div class="bar"><span></span></div>';
+        li.querySelector('.file-name').textContent = file.name;
+        li.querySelector('.file-name').title = file.name;
+        fileList.prepend(li);
+        const item = { file, li };
+
+        const ext = '.' + file.name.split('.').pop().toLowerCase();
+        if (!file.name.includes('.') || !limits.extensions.includes(ext)) {
+          setStatus(item, 'failed', `Unsupported type (${file.name.includes('.') ? ext : 'no extension'})`);
+          continue;
+        }
+        if (file.size > limits.maxUploadMb * 1024 * 1024) {
+          setStatus(item, 'failed', `Too large: ${(file.size / 1048576).toFixed(1)} MB (max ${limits.maxUploadMb} MB)`);
+          continue;
+        }
+        setStatus(item, '', 'Waiting…');
+        queue.push(item);
+      }
+      processQueue();
+    }
+
+    function setStatus(item, state, text, percent) {
+      item.li.className = state;
+      item.li.querySelector('.file-status').textContent = text;
+      if (percent !== undefined) item.li.querySelector('.bar span').style.width = percent + '%';
+    }
+
+    async function processQueue() {
+      if (uploading) return;
+      uploading = true;
+      while (queue.length) {
+        const item = queue.shift();
+        try {
+          const result = await uploadFile(item);
+          const f = result.files?.[0] || {};
+          if (f.error) throw new Error(f.error);
+          setStatus(item, 'done', `✓ ${f.chunks} chunk${f.chunks === 1 ? '' : 's'} · ${f.characters.toLocaleString()} characters`);
+          totals.files += 1;
+          totals.chunks += f.chunks;
+          statFiles.textContent = totals.files;
+          statChunks.textContent = totals.chunks.toLocaleString();
+        } catch (err) {
+          if (err.status === 401) {
+            // Key was changed on the server: stop, drop the saved key, and ask again.
+            setStatus(item, 'failed', 'Not uploaded: key rejected');
+            for (const rest of queue.splice(0)) setStatus(rest, 'failed', 'Not uploaded: key rejected');
+            store.clear();
+            uploading = false;
+            return showSignin('Your key was rejected. Sign in again, then re-add the files.');
+          }
+          setStatus(item, 'failed', err.message);
+        }
+      }
+      uploading = false;
+    }
+
+    // XHR rather than fetch, because fetch can't report upload progress.
+    function uploadFile(item) {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const form = new FormData();
+        form.append('file', item.file);
+        xhr.open('POST', '/api/upload');
+        xhr.setRequestHeader('Authorization', `Bearer ${apiKey}`);
+        xhr.upload.onprogress = (e) => {
+          if (!e.lengthComputable) return;
+          const pct = (e.loaded / e.total) * 100;
+          setStatus(item, 'uploading', `Uploading ${Math.round(pct)}%`, pct);
+        };
+        xhr.upload.onload = () => setStatus(item, 'processing', 'Extracting & embedding…');
+        xhr.onerror = () => reject(new Error('Network error: is the server running?'));
+        xhr.onload = () => {
+          let data = {};
+          try { data = JSON.parse(xhr.responseText); } catch {}
+          if (xhr.status >= 200 && xhr.status < 300) return resolve(data);
+          const message =
+            xhr.status === 413 ? data.error || 'File too large'
+            : data.files?.[0]?.error || data.error || `Upload failed (${xhr.status})`;
+          reject(Object.assign(new Error(message), { status: xhr.status }));
+        };
+        setStatus(item, 'uploading', 'Uploading 0%', 0);
+        xhr.send(form);
+      });
+    }
+  </script>
+</body>
+</html>
