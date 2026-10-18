@@ -40,7 +40,7 @@ scripts/
   dev-server.js    local server running the same handlers
   smoke-test.js    offline sanity checks
 public/index.html  small chat page for manual testing
-data/sample.md     example document
+data/remax/        REMAX Online Shop knowledge base (store info + product catalog PDFs)
 vercel.json        function config (60s max duration)
 .env.example       environment variable template
 ```
