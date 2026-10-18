@@ -351,11 +351,13 @@
       for (const raw of text.split('\n')) {
         const line = raw.trim();
         const bullet = line.match(/^[-*•]\s+(.*)/);
-        const numbered = line.match(/^\d+[.)]\s+(.*)/);
+        const numbered = line.match(/^(\d+)[.)]\s+(.*)/);
         if (bullet || numbered) {
           const type = bullet ? 'ul' : 'ol';
-          if (list !== type) { closeList(); out.push(`<${type}>`); list = type; }
-          out.push(`<li>${inline((bullet || numbered)[1])}</li>`);
+          // Blank lines or sub-bullets between items split a numbered list into
+          // several <ol>s; start each one at the model's own number so it reads 1, 2, 3.
+          if (list !== type) { closeList(); out.push(numbered ? `<ol start="${numbered[1]}">` : '<ul>'); list = type; }
+          out.push(`<li>${inline(bullet ? bullet[1] : numbered[2])}</li>`);
         } else if (!line) {
           closeList();
         } else {
