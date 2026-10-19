@@ -55,9 +55,18 @@ assert.equal(config.llmModel, 'llama3.2');
 delete process.env.AI_PROVIDER;
 
 // Verify all API endpoints load
-for (const mod of ['chat', 'ingest', 'health', 'upload']) {
+for (const mod of ['chat', 'ingest', 'health', 'upload', 'webhook']) {
   const { default: handler } = await import(`../api/${mod}.js`);
   assert.equal(typeof handler, 'function', `api/${mod}.js must export a default handler`);
 }
+
+// Verify Messenger replies are split under the 2000-character limit
+const { splitMessage } = await import('../api/webhook.js');
+assert.deepEqual(splitMessage('hello'), ['hello']);
+const longReply = 'မင်္ဂလာပါ။ '.repeat(400);
+const replyParts = splitMessage(longReply);
+assert.ok(replyParts.length > 1, 'long replies should be split');
+for (const p of replyParts) assert.ok(p.length <= 2000, `message part too long: ${p.length}`);
+assert.equal(replyParts.join(' ').replace(/\s+/g, ''), longReply.replace(/\s+/g, ''), 'no reply text should be dropped');
 
 console.log(`OK: ${chunks.length} chunks; Qdrant/Pinecone verified; AI providers verified; all handlers load.`);

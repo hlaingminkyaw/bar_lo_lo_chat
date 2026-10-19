@@ -40,6 +40,8 @@ Configure environment variables in `.env` for local execution or inside the Verc
 | `ALLOWED_ORIGIN` | No | `*` | Allowed CORS origins for browser fetch calls. |
 | `SITE_URL` | No | `""` | Optional OpenRouter referrer ranking header. |
 | `APP_NAME` | No | `BarLoLo Chat` | OpenRouter application identifier header. |
+| `FB_VERIFY_TOKEN` | If using Messenger | - | Secret string matched against `hub.verify_token` when Meta verifies `/api/webhook`. |
+| `FB_PAGE_ACCESS_TOKEN` | If using Messenger | - | Facebook Page access token used to send replies via the Graph Send API. |
 
 ---
 

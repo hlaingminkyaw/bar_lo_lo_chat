@@ -230,7 +230,31 @@ Verifies environment health and reports configured models. No secrets or credent
 
 ---
 
-## 5. HTTP Error Handling & Status Codes
+## 5. GET & POST /api/webhook (Facebook Messenger)
+
+Connects a Facebook Page's Messenger inbox to the RAG chatbot. Requires `FB_VERIFY_TOKEN` and `FB_PAGE_ACCESS_TOKEN`.
+
+### 5.1 GET /api/webhook (verification)
+Meta calls this once when you save the webhook URL in the app dashboard.
+- **Query**: `hub.mode=subscribe&hub.verify_token=<FB_VERIFY_TOKEN>&hub.challenge=<random>`
+- **Success**: `200 OK`, body is the `hub.challenge` value as plain text.
+- **Failure**: `403 Forbidden` if the token doesn't match or `FB_VERIFY_TOKEN` is unset.
+
+```bash
+curl "http://localhost:3000/api/webhook?hub.mode=subscribe&hub.verify_token=$FB_VERIFY_TOKEN&hub.challenge=12345"
+# → 12345
+```
+
+### 5.2 POST /api/webhook (messages)
+- **Body**: Meta's page event payload (`{ "object": "page", "entry": [{ "messaging": [...] }] }`).
+- **Response**: `200 OK` with plain text `EVENT_RECEIVED`, sent before the answer is generated. Non-page payloads get `404`.
+- Each incoming text message is answered with the same RAG pipeline as `/api/chat` (no conversation history), then sent back through the Graph API v21.0 Send API. Markdown emphasis is stripped, and replies longer than 2000 characters are split into several messages.
+- Echoes of the page's own messages and non-text events (attachments, reactions, read receipts) are ignored.
+- On Vercel, the reply work runs after the response via `waitUntil` and is bounded by the 60-second function limit.
+
+---
+
+## 6. HTTP Error Handling & Status Codes
 
 All errors return JSON in the structure `{ "error": "<message>" }`.
 

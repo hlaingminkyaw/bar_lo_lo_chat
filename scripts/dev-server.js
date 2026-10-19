@@ -8,8 +8,9 @@ import chat from '../api/chat.js';
 import ingest from '../api/ingest.js';
 import health from '../api/health.js';
 import upload from '../api/upload.js';
+import webhook from '../api/webhook.js';
 
-const routes = { '/api/chat': chat, '/api/ingest': ingest, '/api/upload': upload, '/api/health': health };
+const routes = { '/api/chat': chat, '/api/ingest': ingest, '/api/upload': upload, '/api/health': health, '/api/webhook': webhook };
 // Mirrors Vercel's cleanUrls: /admin serves public/admin.html.
 const pages = { '/': 'index.html', '/index.html': 'index.html', '/admin': 'admin.html', '/admin.html': 'admin.html' };
 const STATIC_TYPES = {
@@ -51,5 +52,5 @@ createServer(async (req, res) => {
   })
   .listen(port, () => {
   console.log(`BarLoLo Chat running at http://localhost:${port}   (admin: http://localhost:${port}/admin)`);
-  console.log(`  POST /api/chat   POST /api/ingest   POST /api/upload   GET /api/health`);
+  console.log(`  POST /api/chat   POST /api/ingest   POST /api/upload   GET /api/health   GET|POST /api/webhook`);
 });
