@@ -122,6 +122,10 @@ All tasks must strictly follow the official Backlog.md workflow and standards (`
    - Sources are provided exclusively via the structured `sources` array in API responses.
 6. **Upload Limits**:
    - Keep file uploads under `MAX_UPLOAD_MB` (default 4 MB) to prevent exceeding Vercel's 4.5 MB request payload limit.
+7. **Chatbot System Rules (`RULES.md`)**:
+   - The authoritative rules and system instructions for the RAG chatbot are defined in `./RULES.md` at project root.
+   - The chatbot AI model dynamically loads `./RULES.md` at runtime before answering any user question.
+   - Any AI agent or developer modifying prompts, personas, or RAG behavior MUST read and obey `./RULES.md`.
 
 ---
 

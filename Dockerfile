@@ -16,6 +16,7 @@ COPY public/ ./public/
 COPY scripts/ ./scripts/
 COPY data/ ./data/
 COPY vercel.json ./
+COPY RULES.md ./
 
 EXPOSE 3000
 
