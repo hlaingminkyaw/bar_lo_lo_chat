@@ -1,0 +1,54 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: barlolo-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    restart: unless-stopped
+    environment:
+      - QDRANT__SERVICE__ENABLE_CORS=true
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: barlolo-app
+    ports:
+      - "3000:3000"
+    environment:
+      # Connect to the co-located Qdrant container over internal Docker network
+      - VECTOR_DB=${VECTOR_DB:-qdrant}
+      - QDRANT_URL=http://qdrant:6333
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-barlolo-chat}
+      - QDRANT_API_KEY=${QDRANT_API_KEY:-}
+      # Pluggable AI / LLM provider
+      - AI_PROVIDER=${AI_PROVIDER:-openrouter}
+      - AI_API_KEY=${AI_API_KEY:-}
+      - AI_BASE_URL=${AI_BASE_URL:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+      # Models and free toggle
+      - USE_FREE_MODELS=${USE_FREE_MODELS:-true}
+      - LLM_MODEL=${LLM_MODEL:-}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-meta-llama/llama-3.3-70b-instruct:free}
+      - VISION_MODEL=${VISION_MODEL:-google/gemini-2.0-flash-lite:free}
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-openrouter}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-openai/text-embedding-3-small}
+      - ALLOWED_ORIGIN=${ALLOWED_ORIGIN:-*}
+      - MAX_TOKENS=${MAX_TOKENS:-4096}
+      - CHUNK_SIZE=${CHUNK_SIZE:-1000}
+      - CHUNK_OVERLAP=${CHUNK_OVERLAP:-150}
+      - TOP_K=${TOP_K:-6}
+      - PORT=3000
+    depends_on:
+      - qdrant
+    restart: unless-stopped
+
+volumes:
+  qdrant_storage:

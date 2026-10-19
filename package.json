@@ -17,13 +17,11 @@
   "dependencies": {
     "@napi-rs/canvas": "0.1.80",
     "@pinecone-database/pinecone": "9.0.0",
+    "dotenv": "^17.2.3",
     "mammoth": "^1.13.0",
     "multer": "^2.4.0",
     "pdf-parse": "^2.4.5",
     "pdfjs-dist": "5.4.296",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
-  },
-  "devDependencies": {
-    "dotenv": "^17.2.3"
   }
 }
