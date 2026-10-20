@@ -42,6 +42,8 @@ Configure environment variables in `.env` for local execution or inside the Verc
 | `APP_NAME` | No | `BarLoLo Chat` | OpenRouter application identifier header. |
 | `FB_VERIFY_TOKEN` | If using Messenger | - | Secret string matched against `hub.verify_token` when Meta verifies `/api/webhook`. |
 | `FB_PAGE_ACCESS_TOKEN` | If using Messenger | - | Facebook Page access token used to send replies via the Graph Send API. |
+| `UPSTASH_REDIS_REST_URL` | For web chat history | - | Upstash Redis REST URL (falls back to `KV_REST_API_URL`). Without it, `/api/chat` answers without history. |
+| `UPSTASH_REDIS_REST_TOKEN` | For web chat history | - | Upstash Redis REST token (falls back to `KV_REST_API_TOKEN`). |
 
 ---
 

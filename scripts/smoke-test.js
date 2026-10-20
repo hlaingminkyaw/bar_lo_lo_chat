@@ -69,4 +69,17 @@ assert.ok(replyParts.length > 1, 'long replies should be split');
 for (const p of replyParts) assert.ok(p.length <= 2000, `message part too long: ${p.length}`);
 assert.equal(replyParts.join(' ').replace(/\s+/g, ''), longReply.replace(/\s+/g, ''), 'no reply text should be dropped');
 
-console.log(`OK: ${chunks.length} chunks; Qdrant/Pinecone verified; AI providers verified; all handlers load.`);
+// Verify web chat history degrades to "no history" without Redis credentials
+for (const name of ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN', 'KV_REST_API_URL', 'KV_REST_API_TOKEN']) {
+  delete process.env[name];
+}
+const { getHistory, saveTurn, isValidSessionId } = await import('../lib/redis.js');
+assert.ok(isValidSessionId('3f2b8c1e-4d5a-4b6c-9e7f-0a1b2c3d4e5f'));
+assert.ok(isValidSessionId('lq2x9k1a-8f3hd02kq9'));
+assert.ok(!isValidSessionId('short'));
+assert.ok(!isValidSessionId('bad:key*with spaces'));
+assert.ok(!isValidSessionId(123));
+assert.deepEqual(await getHistory('3f2b8c1e-4d5a-4b6c-9e7f-0a1b2c3d4e5f'), []);
+await saveTurn('3f2b8c1e-4d5a-4b6c-9e7f-0a1b2c3d4e5f', 'hi', 'hello');
+
+console.log(`OK: ${chunks.length} chunks; Qdrant/Pinecone verified; AI providers verified; all handlers load; Redis history fallback verified.`);

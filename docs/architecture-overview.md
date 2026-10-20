@@ -80,13 +80,14 @@ The architecture runs on cost-effective serverless and containerized infrastruct
    - Metadata stored: `text`, `source`, `fileType`, `docId`, `chunk`, `uploadedAt`.
 
 ### 3.2 Query & Retrieval Flow (`/api/chat`)
-1. **Query Parsing**: Client submits query text, optional conversation history (prior turns), optional namespace, and optional metadata filters.
+1. **Query Parsing**: Client submits query text, an optional `sessionId` (web UI) or explicit conversation history, optional namespace, and optional metadata filters. With a `sessionId`, the last 4 messages are loaded from Upstash Redis (`lib/redis.js`, key `chat:session:<sessionId>`); if Redis is unavailable the request continues without history.
 2. **Query Vectorization**: Query string is embedded as `input_type: "query"`.
 3. **Vector Similarity Search**: Active vector store (Pinecone or Qdrant) is searched for `topK` nearest neighbors (default 6) filtered by minimum similarity score.
 4. **Context Construction**: Retrieved text snippets are compiled into a `<reference_knowledge>` block within the system prompt.
 5. **Generation**: OpenRouter executes the prompt against the designated chat model (e.g., `openai/gpt-4o-mini`).
 6. **Post-Processing (`stripCitations`)**: Regex cleanup removes inline numerical citation tags (e.g. `[1]`, `[၁]`, `(1)`) while preserving markdown links.
 7. **Client Response**: Returns clean conversational answer alongside structured `sources` metadata.
+8. **History Persistence**: With a `sessionId`, the user question and answer are appended to Redis after the response (via `waitUntil`), trimmed to the last 4 messages, and given a 1-hour TTL. The Messenger webhook does not use this history.
 
 ---
 

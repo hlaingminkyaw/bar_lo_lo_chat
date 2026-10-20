@@ -157,7 +157,8 @@ Ingestion writes to the same Pinecone index whether you run it locally or on Ver
 ```jsonc
 {
   "message": "What is the refund policy?",       // required (alias: "question")
-  "history": [{ "role": "user", "content": "..." }, { "role": "assistant", "content": "..." }],
+  "sessionId": "3f2b8c1e-...",                     // web UI: history kept in Upstash Redis (last 4 messages, 1h TTL)
+  "history": [{ "role": "user", "content": "..." }, { "role": "assistant", "content": "..." }], // only without sessionId
   "topK": 5,                                       // 1–20
   "namespace": "default",
   "filter": { "source": { "$eq": "faq.md" } },     // Pinecone metadata filter

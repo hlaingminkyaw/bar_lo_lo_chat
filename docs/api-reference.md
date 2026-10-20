@@ -21,7 +21,8 @@ Answers user questions by retrieving relevant vector context from Pinecone and q
 | Field | Type | Required | Description | Default |
 |---|---|---|---|---|
 | `message` | `string` | **Yes** | The user's prompt or question (alias: `question`). Max 4000 characters. | - |
-| `history` | `array` | No | List of prior messages: `[{ role: "user" \| "assistant", content: string }]`. Max last 6 turns used. | `[]` |
+| `sessionId` | `string` | No | Web chat session ID (8–64 chars of `A-Z a-z 0-9 _ -`, e.g. a UUID). When present, the last 4 messages (2 user + 2 assistant) are loaded from Upstash Redis key `chat:session:<sessionId>`, and the new turn is appended afterwards with a 1-hour TTL. `history` is ignored. If Redis is not configured or fails, the question is answered without history. | - |
+| `history` | `array` | No | List of prior messages: `[{ role: "user" \| "assistant", content: string }]`. Used only when `sessionId` is absent. Max last 6 messages used. | `[]` |
 | `topK` | `integer` | No | Number of context chunks to retrieve (clamped between 1 and 20). | `6` (from `TOP_K` env) |
 | `namespace` | `string` | No | Pinecone namespace to scope vector retrieval. | `""` or `PINECONE_NAMESPACE` |
 | `filter` | `object` | No | Pinecone metadata filter (e.g. `{ source: { $eq: "remax.md" } }`). | `undefined` |
@@ -44,9 +45,12 @@ Answers user questions by retrieving relevant vector context from Pinecone and q
 curl -X POST http://localhost:3000/api/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "message": "How do I return a defective power bank?"
+    "message": "How do I return a defective power bank?",
+    "sessionId": "3f2b8c1e-4d5a-4b6c-9e7f-0a1b2c3d4e5f"
   }'
 ```
+
+The web UI (`public/index.html`) stores its `sessionId` in `localStorage` under `barlolo.sessionId` and sends `{ message, sessionId }` on every request. The **Clear** button generates a new ID, so the server-side history starts empty again.
 
 ### 1.2 Response
 - **Status Code**: `200 OK`

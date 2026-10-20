@@ -293,9 +293,32 @@
     const input = document.getElementById('q');
     const send = document.getElementById('send');
     const clearBtn = document.getElementById('clear');
-    const MAX_HISTORY = 12;
-    let history = [];
+    // The server keeps recent turns in Redis under this ID, so it must survive reloads.
+    const SESSION_KEY = 'barlolo.sessionId';
+    let sessionId = loadSessionId();
     let busy = false;
+
+    function newSessionId() {
+      return crypto.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+    }
+
+    // localStorage can throw (private mode, blocked storage); fall back to a per-page ID.
+    function loadSessionId() {
+      try {
+        const saved = localStorage.getItem(SESSION_KEY);
+        if (saved) return saved;
+        const id = newSessionId();
+        localStorage.setItem(SESSION_KEY, id);
+        return id;
+      } catch {
+        return newSessionId();
+      }
+    }
+
+    function resetSessionId() {
+      sessionId = newSessionId();
+      try { localStorage.setItem(SESSION_KEY, sessionId); } catch {}
+    }
 
     // On touch screens, Enter inserts a new line (Send button sends) and we don't
     // auto-focus the input, which would pop the keyboard up unasked.
@@ -420,7 +443,6 @@
         const data = await askServer(message);
         typing.remove();
         addMessage('bot', data.answer);
-        history.push({ role: 'user', content: message }, { role: 'assistant', content: data.answer });
       } catch (err) {
         // Technical details go to the console; the user gets a friendly reply in their language.
         console.error('Chat request failed:', err);
@@ -440,7 +462,7 @@
         res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message, history: history.slice(-MAX_HISTORY) }),
+          body: JSON.stringify({ message, sessionId }),
         });
       } catch (err) {
         if (retried) throw err;
@@ -474,8 +496,9 @@
     });
     input.addEventListener('input', autoGrow);
 
+    // A new session ID means the server starts from an empty history too.
     clearBtn.addEventListener('click', () => {
-      history = [];
+      resetSessionId();
       renderEmpty();
       if (!isTouch) input.focus();
     });
