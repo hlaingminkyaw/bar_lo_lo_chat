@@ -503,8 +503,24 @@
       if (!isTouch) input.focus();
     });
 
+    // Redraw the stored conversation (the server keeps the last few turns) after a reload.
+    // Failures just leave the welcome screen, same as a new visit.
+    async function loadHistory() {
+      const requestedFor = sessionId;
+      try {
+        const res = await fetch(`/api/history?sessionId=${encodeURIComponent(requestedFor)}`);
+        const { history } = await res.json();
+        // Skip if the user already sent a message or pressed Clear while this was loading.
+        if (!Array.isArray(history) || !history.length || busy || requestedFor !== sessionId || !thread.querySelector('.empty')) return;
+        for (const m of history) addMessage(m.role === 'assistant' ? 'bot' : 'user', m.content);
+      } catch (err) {
+        console.warn('Could not load chat history:', err);
+      }
+    }
+
     renderEmpty();
     if (!isTouch) input.focus();
+    loadHistory();
   </script>
 </body>
 </html>

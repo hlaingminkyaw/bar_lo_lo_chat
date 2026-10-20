@@ -176,6 +176,10 @@ Response:
 }
 ```
 
+### `GET /api/history?sessionId=<id>`
+
+Returns `{ "history": [{ "role": "user" | "assistant", "content": "..." }] }`, the last 4 stored messages for a web session (empty if none, expired, or Redis is down). The web UI uses it to redraw the chat after a reload.
+
 ### `POST /api/ingest`
 
 No authentication (see **Security**).

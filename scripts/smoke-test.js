@@ -55,7 +55,7 @@ assert.equal(config.llmModel, 'llama3.2');
 delete process.env.AI_PROVIDER;
 
 // Verify all API endpoints load
-for (const mod of ['chat', 'ingest', 'health', 'upload', 'webhook']) {
+for (const mod of ['chat', 'history', 'ingest', 'health', 'upload', 'webhook']) {
   const { default: handler } = await import(`../api/${mod}.js`);
   assert.equal(typeof handler, 'function', `api/${mod}.js must export a default handler`);
 }
@@ -81,5 +81,19 @@ assert.ok(!isValidSessionId('bad:key*with spaces'));
 assert.ok(!isValidSessionId(123));
 assert.deepEqual(await getHistory('3f2b8c1e-4d5a-4b6c-9e7f-0a1b2c3d4e5f'), []);
 await saveTurn('3f2b8c1e-4d5a-4b6c-9e7f-0a1b2c3d4e5f', 'hi', 'hello');
+
+// Verify GET /api/history returns an empty history for invalid or unknown sessions
+const { default: historyHandler } = await import('../api/history.js');
+for (const url of ['/api/history', '/api/history?sessionId=bad*id', '/api/history?sessionId=3f2b8c1e-4d5a-4b6c-9e7f-0a1b2c3d4e5f']) {
+  const res = {
+    headers: {},
+    setHeader(name, value) { this.headers[name.toLowerCase()] = value; },
+    end(body) { this.body = body; },
+  };
+  await historyHandler({ method: 'GET', url }, res);
+  assert.equal(res.statusCode, 200, `${url} should return 200`);
+  assert.deepEqual(JSON.parse(res.body), { history: [] });
+  assert.equal(res.headers['cache-control'], 'no-store');
+}
 
 console.log(`OK: ${chunks.length} chunks; Qdrant/Pinecone verified; AI providers verified; all handlers load; Redis history fallback verified.`);

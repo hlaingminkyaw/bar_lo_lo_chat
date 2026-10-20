@@ -72,6 +72,24 @@ The web UI (`public/index.html`) stores its `sessionId` in `localStorage` under 
 }
 ```
 
+### 1.3 GET /api/history
+
+Returns the stored conversation for a web session so the UI can redraw it after a page reload.
+
+- **Query**: `sessionId` (same format as in `/api/chat`), e.g. `/api/history?sessionId=3f2b8c1e-4d5a-4b6c-9e7f-0a1b2c3d4e5f`
+- **Response** (`200 OK`, `Cache-Control: no-store`):
+
+```json
+{
+  "history": [
+    { "role": "user", "content": "What services do you offer?" },
+    { "role": "assistant", "content": "REMAX offers headphones, power banks, chargers..." }
+  ]
+}
+```
+
+Messages are oldest first and limited to the last 4 kept in Redis. A missing or invalid `sessionId`, an expired session (1-hour TTL), or a Redis failure returns `{ "history": [] }`.
+
 ---
 
 ## 2. POST /api/ingest
