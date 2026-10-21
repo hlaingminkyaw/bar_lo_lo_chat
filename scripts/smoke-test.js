@@ -170,4 +170,24 @@ assert.equal(webhookRes.statusCode, 200);
 assert.equal(webhookRes.body, 'EVENT_RECEIVED');
 assert.equal(fetchCalls, 0, 'unknown pages must not trigger the Send API or RAG');
 
-console.log(`OK: ${chunks.length} chunks; Qdrant/Pinecone verified; AI providers verified; all handlers load; Redis history fallback verified; ${listShops().length} shop(s) configured, tenant routing verified.`);
+// Verify embedding calls retry 429s within their budget and fail fast on other errors
+const { withRateLimitRetry } = await import('../lib/embeddings.js');
+const realWarn = console.warn;
+console.warn = () => {};
+const pinecone429 = new Error("Request failed. You've reached the max tokens per minute (250000). Status: 429.");
+let embedCalls = 0;
+const retried = await withRateLimitRetry(async () => {
+  if (++embedCalls < 3) throw pinecone429;
+  return 'ok';
+}, { budgetMs: 100, waitedMs: 0 }, { baseDelayMs: 1 });
+assert.equal(retried, 'ok');
+assert.equal(embedCalls, 3);
+embedCalls = 0;
+await assert.rejects(withRateLimitRetry(async () => { embedCalls++; throw pinecone429; }, { budgetMs: 10, waitedMs: 0 }, { baseDelayMs: 4 }), /Status: 429/);
+assert.equal(embedCalls, 2, 'gives up once the retry budget is spent');
+embedCalls = 0;
+await assert.rejects(withRateLimitRetry(async () => { embedCalls++; throw new Error('Status: 400.'); }, { budgetMs: 100, waitedMs: 0 }, { baseDelayMs: 1 }));
+assert.equal(embedCalls, 1, 'non-429 errors are not retried');
+console.warn = realWarn;
+
+console.log(`OK: ${chunks.length} chunks; Qdrant/Pinecone verified; AI providers verified; all handlers load; Redis history fallback verified; ${listShops().length} shop(s) configured, tenant routing verified; embedding 429 retry verified.`);

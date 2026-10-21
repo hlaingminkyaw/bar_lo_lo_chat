@@ -76,7 +76,8 @@ for (const file of files) {
   const source = path.relative(process.cwd(), file);
   // Stable id per file path, so re-running updates instead of duplicating.
   const id = source.replace(/[^a-zA-Z0-9._-]+/g, '_');
-  const { upserted } = await ingestDocuments([{ id, source, text }], { namespace });
+  // No function timeout here, so wait out embedding rate limits (per-minute quotas).
+  const { upserted } = await ingestDocuments([{ id, source, text }], { namespace, retryBudgetMs: 5 * 60_000 });
   total += upserted;
   console.log(`✓ ${source} → ${upserted} chunks`);
 }
