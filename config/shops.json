@@ -1,0 +1,18 @@
+{
+  "1391068220755133": {
+    "shopId": "remax",
+    "shopName": "REMAX Online Shop",
+    "namespace": "shop_remax",
+    "pageAccessToken": "PAGE_ACCESS_TOKEN_REMAX",
+    "maxTokens": 1024,
+    "customPrompt": "You are REMAX Assistant. Be concise and polite."
+  },
+  "PAGE_ID_STORE_B": {
+    "shopId": "store_b",
+    "shopName": "Fashion Store B",
+    "namespace": "shop_store_b",
+    "pageAccessToken": "PAGE_ACCESS_TOKEN_STORE_B",
+    "maxTokens": 200,
+    "customPrompt": "You are Store B Sales Bot. Focus on clothes sizing and delivery."
+  }
+}

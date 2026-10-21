@@ -87,7 +87,7 @@ The architecture runs on cost-effective serverless and containerized infrastruct
 5. **Generation**: OpenRouter executes the prompt against the designated chat model (e.g., `openai/gpt-4o-mini`).
 6. **Post-Processing (`stripCitations`)**: Regex cleanup removes inline numerical citation tags (e.g. `[1]`, `[၁]`, `(1)`) while preserving markdown links.
 7. **Client Response**: Returns clean conversational answer alongside structured `sources` metadata.
-8. **History Persistence**: With a `sessionId`, the user question and answer are appended to Redis after the response (via `waitUntil`), trimmed to the last 4 messages, and given a 1-hour TTL. The Messenger webhook does not use this history.
+8. **History Persistence**: With a `sessionId`, the user question and answer are appended to Redis after the response (via `waitUntil`), trimmed to the last 4 messages, and given a 1-hour TTL. The Messenger webhook keeps the same kind of history per shop and sender under `chat:fb:<shopId>:<senderId>` (see [multi-tenant-shops.md](multi-tenant-shops.md)).
 
 ---
 

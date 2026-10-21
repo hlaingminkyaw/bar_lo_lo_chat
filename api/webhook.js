@@ -1,6 +1,8 @@
 import { waitUntil } from '@vercel/functions';
 import { route, readJson, sendJson } from '../lib/http.js';
 import { answerQuestion } from '../lib/rag.js';
+import { getMessengerHistory, saveMessengerTurn } from '../lib/redis.js';
+import { getShopByPageId, resolvePageToken } from '../lib/shops.js';
 
 const SEND_API_URL = 'https://graph.facebook.com/v21.0/me/messages';
 const MAX_QUESTION_CHARS = 4000;
@@ -8,17 +10,20 @@ const MAX_QUESTION_CHARS = 4000;
 const MAX_MESSAGE_CHARS = 2000;
 
 /**
- * Facebook Messenger webhook.
+ * Facebook Messenger webhook, shared by every shop's Facebook Page.
  *
  * GET /api/webhook
  *   Meta's subscription handshake. Returns hub.challenge as plain text when
  *   hub.mode is "subscribe" and hub.verify_token matches FB_VERIFY_TOKEN.
  *
  * POST /api/webhook
- *   Page events. Replies "EVENT_RECEIVED" right away (Meta retries slow
- *   webhooks), then answers each text message with the RAG pipeline and sends
- *   the reply through the Send API using FB_PAGE_ACCESS_TOKEN. waitUntil keeps
- *   the Vercel function alive for that work after the response is sent.
+ *   Page events. Each message is routed by recipient.id (the Page ID) to its
+ *   shop in config/shops.json; messages to pages with no shop are ignored.
+ *   Replies "EVENT_RECEIVED" right away (Meta retries slow webhooks), then
+ *   answers each text message from that shop's vector namespace with the
+ *   shop's prompt, token budget and chat history, and sends the reply with
+ *   the shop's page access token. waitUntil keeps the Vercel function alive
+ *   for that work after the response is sent.
  */
 export default route(['GET', 'POST'], async (req, res) => {
   if (req.method === 'GET') return verify(req, res);
@@ -26,13 +31,20 @@ export default route(['GET', 'POST'], async (req, res) => {
   const body = await readJson(req);
   if (body.object !== 'page') return sendText(res, 404, 'Not a page event');
 
-  const messages = (body.entry ?? [])
-    .flatMap((entry) => entry.messaging ?? [])
-    .filter((event) => event.sender?.id && typeof event.message?.text === 'string' && !event.message.is_echo);
+  const jobs = [];
+  for (const event of (body.entry ?? []).flatMap((entry) => entry.messaging ?? [])) {
+    if (!event.sender?.id || typeof event.message?.text !== 'string' || event.message.is_echo) continue;
+    const shop = getShopByPageId(event.recipient?.id);
+    if (!shop) {
+      console.warn(`Messenger: no shop configured for page ${event.recipient?.id}; message ignored`);
+      continue;
+    }
+    jobs.push({ shop, psid: event.sender.id, text: event.message.text });
+  }
 
   sendText(res, 200, 'EVENT_RECEIVED');
-  if (messages.length) {
-    waitUntil(Promise.allSettled(messages.map((event) => reply(event.sender.id, event.message.text))));
+  if (jobs.length) {
+    waitUntil(Promise.allSettled(jobs.map(({ shop, psid, text }) => reply(shop, psid, text))));
   }
 });
 
@@ -52,35 +64,48 @@ function sendText(res, status, text) {
 }
 
 // Runs after the response is sent, so it must never throw.
-async function reply(psid, text) {
+async function reply(shop, psid, text) {
   const question = text.trim().slice(0, MAX_QUESTION_CHARS);
   if (!question) return;
   try {
-    await sendAction(psid, 'typing_on');
+    const token = resolvePageToken(shop);
+    const [, history] = await Promise.all([
+      sendAction(token, psid, 'typing_on'),
+      getMessengerHistory(shop.shopId, psid),
+    ]);
+
     let answer;
+    let answered = false;
     try {
-      ({ answer } = await answerQuestion(question));
+      ({ answer } = await answerQuestion(question, {
+        history,
+        namespace: shop.namespace,
+        customPrompt: shop.customPrompt,
+        maxTokens: shop.maxTokens,
+      }));
+      answered = true;
     } catch (err) {
-      console.error('Messenger: answerQuestion failed:', err);
+      console.error(`Messenger[${shop.shopId}]: answerQuestion failed:`, err);
       answer = fallbackMessage(question);
     }
+
     for (const part of splitMessage(toPlainText(answer))) {
-      await callSendApi({ recipient: { id: psid }, messaging_type: 'RESPONSE', message: { text: part } });
+      await callSendApi(token, { recipient: { id: psid }, messaging_type: 'RESPONSE', message: { text: part } });
     }
+    // Only real answers that reached the user become context for the next turn.
+    if (answered) await saveMessengerTurn(shop.shopId, psid, question, answer);
   } catch (err) {
-    console.error(`Messenger: reply to ${psid} failed:`, err);
+    console.error(`Messenger[${shop.shopId}]: reply to ${psid} failed:`, err);
   }
 }
 
-function sendAction(psid, action) {
-  return callSendApi({ recipient: { id: psid }, sender_action: action }).catch((err) =>
+function sendAction(token, psid, action) {
+  return callSendApi(token, { recipient: { id: psid }, sender_action: action }).catch((err) =>
     console.warn(`Messenger: ${action} failed:`, err.message),
   );
 }
 
-async function callSendApi(payload) {
-  const token = process.env.FB_PAGE_ACCESS_TOKEN;
-  if (!token) throw new Error('FB_PAGE_ACCESS_TOKEN is not set');
+async function callSendApi(token, payload) {
   const res = await fetch(`${SEND_API_URL}?access_token=${encodeURIComponent(token)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

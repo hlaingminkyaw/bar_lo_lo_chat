@@ -47,7 +47,13 @@ npm run ingest
 # Ingest specific folder or files
 npm run ingest -- ./data/remax
 npm run ingest -- ./data/remax/remax_policy_delivery_burmese.md
+
+# Ingest into a specific namespace (e.g. one Messenger shop's)
+npm run ingest -- ./data/remax --namespace=shop_remax   # or: --namespace shop_remax
+npm run ingest -- ./data/remax --shop=remax             # namespace looked up in config/shops.json
 ```
+
+Without `--namespace`/`--shop`, documents go to `PINECONE_NAMESPACE`. Each Messenger shop only searches its own namespace, see [multi-tenant-shops.md](multi-tenant-shops.md).
 
 The script:
 1. Discovers all supported files recursively.

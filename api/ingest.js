@@ -1,5 +1,6 @@
 import { route, readJson, sendJson, HttpError } from '../lib/http.js';
 import { ingestDocuments } from '../lib/ingest.js';
+import { parseNamespace } from '../lib/vector-store.js';
 
 // Keep each request small enough to finish well inside the function timeout.
 // For bulk loads, use `npm run ingest` locally instead.
@@ -7,7 +8,8 @@ const MAX_DOCUMENTS = 50;
 const MAX_TOTAL_CHARS = 1_000_000;
 
 /**
- * POST /api/ingest   (no authentication)
+ * POST /api/ingest[?namespace=shop_remax]   (no authentication)
+ * The namespace comes from the query parameter or the body; the query wins.
  * Body, either a single document:
  *   { text: string, id?: string, source?: string, metadata?: object, namespace?: string }
  * or many:
@@ -16,6 +18,8 @@ const MAX_TOTAL_CHARS = 1_000_000;
  */
 export default route(['POST'], async (req, res) => {
   const body = await readJson(req);
+  const query = new URL(req.url, 'http://localhost').searchParams;
+  const namespace = parseNamespace(query.get('namespace') || body.namespace);
 
   const documents = Array.isArray(body.documents) ? body.documents : body.text ? [body] : [];
   if (!documents.length) {
@@ -42,9 +46,7 @@ export default route(['POST'], async (req, res) => {
     throw new HttpError(413, `Total text must be at most ${MAX_TOTAL_CHARS} characters per request`);
   }
 
-  const result = await ingestDocuments(cleaned, {
-    namespace: typeof body.namespace === 'string' ? body.namespace : undefined,
-  });
+  const result = await ingestDocuments(cleaned, { namespace });
   sendJson(res, 200, result);
 });
 

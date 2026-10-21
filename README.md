@@ -25,7 +25,9 @@ api/
   chat.js          POST /api/chat    retrieve + generate
   ingest.js        POST /api/ingest  chunk + embed + upsert (Bearer-protected)
   health.js        GET  /api/health  shows which env vars are set
-  webhook.js       GET|POST /api/webhook  Facebook Messenger bot (see docs/api-reference.md)
+  webhook.js       GET|POST /api/webhook  Facebook Messenger bot for many shop pages (see docs/multi-tenant-shops.md)
+config/
+  shops.json       Facebook Page ID → shop (namespace, prompt, token env var, maxTokens)
 lib/
   config.js        env var access and defaults
   chunk.js         recursive text splitter with overlap

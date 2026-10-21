@@ -101,6 +101,7 @@ Directly ingests raw text or batch text documents into Pinecone, handling text c
 - **Headers**:
   - `Content-Type: application/json`
 - **Limits**: Maximum 50 documents and 1,000,000 total characters per call.
+- **Namespace**: `?namespace=shop_remax` in the query, or `"namespace"` in the body (the query wins). 1–64 characters of `A-Z a-z 0-9 _ -`; anything else returns `400`. Omit it to use `PINECONE_NAMESPACE`.
 
 #### Single Document Format
 ```json
@@ -185,12 +186,12 @@ Uploads one or more binary files (up to 10 files per request). Extracts text, ch
 - **Form Fields**:
   - `file`: One or more binary files attached.
   - `namespace` (optional): Pinecone namespace for the upload.
+- **Query** (optional): `?namespace=<ns>`, same as the form field; the query wins if both are set. Use a shop's namespace from `config/shops.json` to load that shop's knowledge.
 
 #### Example (cURL)
 ```bash
-curl -X POST http://localhost:3000/api/upload \
-  -F "file=@./data/remax/remax_00_store_info.pdf" \
-  -F "namespace=remax"
+curl -X POST "http://localhost:3000/api/upload?namespace=shop_remax" \
+  -F "file=@./data/remax/remax_00_store_info.pdf"
 ```
 
 #### Successful Response (`200 OK`)
@@ -254,7 +255,7 @@ Verifies environment health and reports configured models. No secrets or credent
 
 ## 5. GET & POST /api/webhook (Facebook Messenger)
 
-Connects a Facebook Page's Messenger inbox to the RAG chatbot. Requires `FB_VERIFY_TOKEN` and `FB_PAGE_ACCESS_TOKEN`.
+Connects the Messenger inboxes of one or more Facebook Pages (shops) to the RAG chatbot. Requires `FB_VERIFY_TOKEN`, a shop entry per page in `config/shops.json`, and each shop's page access token env var. See [multi-tenant-shops.md](multi-tenant-shops.md).
 
 ### 5.1 GET /api/webhook (verification)
 Meta calls this once when you save the webhook URL in the app dashboard.
@@ -270,7 +271,9 @@ curl "http://localhost:3000/api/webhook?hub.mode=subscribe&hub.verify_token=$FB_
 ### 5.2 POST /api/webhook (messages)
 - **Body**: Meta's page event payload (`{ "object": "page", "entry": [{ "messaging": [...] }] }`).
 - **Response**: `200 OK` with plain text `EVENT_RECEIVED`, sent before the answer is generated. Non-page payloads get `404`.
-- Each incoming text message is answered with the same RAG pipeline as `/api/chat` (no conversation history), then sent back through the Graph API v21.0 Send API. Markdown emphasis is stripped, and replies longer than 2000 characters are split into several messages.
+- Each message is routed by `recipient.id` (the Page ID) to its shop in `config/shops.json`. Messages to pages with no shop entry are ignored (logged, still `200`).
+- The message is answered with the same RAG pipeline as `/api/chat`, but retrieval is limited to the shop's `namespace`, and the shop's `customPrompt` and `maxTokens` are used. History is the last 4 messages from Redis key `chat:fb:<shopId>:<senderId>` (1-hour TTL); without Redis it answers without history.
+- The reply is sent through the Graph API v21.0 Send API with the shop's page access token. Markdown emphasis is stripped, and replies longer than 2000 characters are split into several messages. Only answers that were generated and delivered are saved to history.
 - Echoes of the page's own messages and non-text events (attachments, reactions, read receipts) are ignored.
 - On Vercel, the reply work runs after the response via `waitUntil` and is bounded by the 60-second function limit.
 

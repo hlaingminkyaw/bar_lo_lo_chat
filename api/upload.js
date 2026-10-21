@@ -5,6 +5,7 @@ import { config } from '../lib/config.js';
 import { route, sendJson, HttpError } from '../lib/http.js';
 import { extractText, SUPPORTED_EXTENSIONS } from '../lib/extract.js';
 import { ingestDocuments } from '../lib/ingest.js';
+import { parseNamespace } from '../lib/vector-store.js';
 
 const MAX_FILES = 10;
 
@@ -15,9 +16,10 @@ const MAX_FILES = 10;
  *   Upload limits, used by /admin.
  *   Response: { ok: true, maxUploadMb, extensions }
  *
- * POST /api/upload
- *   multipart/form-data with one or more files in the "file" field, plus an
- *   optional "namespace" text field.
+ * POST /api/upload[?namespace=shop_remax]
+ *   multipart/form-data with one or more files in the "file" field. The
+ *   target namespace (e.g. one shop's) comes from the ?namespace= query
+ *   parameter or an optional "namespace" text field; the query wins.
  *   Supported: .pdf .docx .xlsx .xls .csv .png .jpg .jpeg .webp .md .txt .html .json
  *   Each chunk is stored in Pinecone with metadata
  *   { text, source, uploadedAt (ms since epoch), fileType, docId, chunk }.
@@ -32,7 +34,8 @@ export default route(['GET', 'POST'], async (req, res) => {
   const files = await receiveFiles(req, res);
   if (!files.length) throw new HttpError(400, 'Attach at least one file in the "file" field');
 
-  const namespace = typeof req.body?.namespace === 'string' && req.body.namespace ? req.body.namespace : undefined;
+  const query = new URL(req.url, 'http://localhost').searchParams;
+  const namespace = parseNamespace(query.get('namespace') || req.body?.namespace);
   const results = [];
   let upserted = 0;
 

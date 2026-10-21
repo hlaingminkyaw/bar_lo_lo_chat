@@ -2,19 +2,51 @@
 // Usage:
 //   npm run ingest                 # ingests ./data
 //   npm run ingest -- ./docs a.md  # any mix of files and folders
-//   npm run ingest -- ./docs --namespace=handbook
+//   npm run ingest -- ./docs --namespace=handbook   (or --namespace handbook)
+//   npm run ingest -- data/remax --shop=remax       # the namespace of shop "remax" in config/shops.json
 import 'dotenv/config';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { ingestDocuments } from '../lib/ingest.js';
 import { extractText, SUPPORTED_EXTENSIONS } from '../lib/extract.js';
+import { getShopById } from '../lib/shops.js';
+import { parseNamespace } from '../lib/vector-store.js';
 
 const EXTENSIONS = new Set(SUPPORTED_EXTENSIONS);
 
+function fail(message) {
+  console.error(message);
+  process.exit(1);
+}
+
+const flags = {};
+const targets = [];
 const args = process.argv.slice(2);
-const namespace = args.find((a) => a.startsWith('--namespace='))?.split('=')[1];
-const targets = args.filter((a) => !a.startsWith('--'));
+for (let i = 0; i < args.length; i++) {
+  const flag = args[i].match(/^--(namespace|shop)(?:=(.*))?$/);
+  if (flag) {
+    flags[flag[1]] = flag[2] ?? args[++i];
+    if (!flags[flag[1]]) fail(`--${flag[1]} needs a value`);
+  } else if (args[i].startsWith('--')) fail(`Unknown option ${args[i]}. Use --namespace=<ns> or --shop=<shopId>.`);
+  else targets.push(args[i]);
+}
 if (!targets.length) targets.push('data');
+
+let namespace;
+try {
+  namespace = parseNamespace(flags.namespace);
+} catch (err) {
+  fail(err.message);
+}
+if (flags.shop !== undefined) {
+  const shop = getShopById(flags.shop);
+  if (!shop) fail(`No shop "${flags.shop}" in config/shops.json`);
+  if (namespace && namespace !== shop.namespace) {
+    fail(`--namespace=${namespace} does not match shop "${shop.shopId}" (namespace ${shop.namespace})`);
+  }
+  namespace = shop.namespace;
+}
+console.log(`Ingesting into namespace "${namespace ?? process.env.PINECONE_NAMESPACE ?? 'default'}"`);
 
 async function collect(target) {
   const info = await stat(target);
